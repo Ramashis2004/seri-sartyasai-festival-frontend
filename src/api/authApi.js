@@ -1,7 +1,7 @@
 import API from "./axiosInstance";
 
 export const login = async (role, credentials) => {
-  const { data } = await API.post(`/${role}/login`, credentials);
+  const { data } = await API.post(`/api/auth/${role}/login`, credentials);
   return data; // { message, token, user }
 };
 
