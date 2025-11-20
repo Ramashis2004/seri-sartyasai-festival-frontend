@@ -1,7 +1,7 @@
 import API from "./axiosInstance";
 
 export const listUsers = async (role) => {
-  const { data } = await API.get(`/admin/${role}`);
+  const { data } = await API.get(`/api/admin/${role}`);
   return data;
 };
 
