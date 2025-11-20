@@ -6,7 +6,7 @@ export const login = async (role, credentials) => {
 };
 
 export const register = async (role, payload) => {
-  const { data } = await API.post(`/auth/${role}/register`, payload);
+  const { data } = await API.post(`/api/auth/${role}/register`, payload);
   return data; // { message, user }
 };
 
