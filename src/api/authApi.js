@@ -11,12 +11,12 @@ export const register = async (role, payload) => {
 };
 
 export const forgotPassword = async (role, email) => {
-  const { data } = await API.post(`/${role}/forgot-password`, { email });
+  const { data } = await API.post(`/api/${role}/forgot-password`, { email });
   return data; // { message }
 };
 
 export const resetPasswordWithToken = async (role, body) => {
-  const { data } = await API.post(`/${role}/reset-password`, body);
+  const { data } = await API.post(`/api/${role}/reset-password`, body);
   return data; // { message }
 };
 
