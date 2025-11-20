@@ -1,7 +1,9 @@
 import axios from "axios";
 
 // Standalone axios instance WITHOUT auth header
-const publicApi = axios.create({ baseURL: "http://localhost:4000/api" });
+const publicApi = axios.create({ baseURL: 
+  `${process.env.REACT_APP_API_URL}/api` || "http://localhost:5000/api",
+ });
 
 export const getPublicEvents = async () => {
   const { data } = await publicApi.get("/public/events");
