@@ -1,0 +1,167 @@
+/* Dashboard layout */
+.kpi-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpi-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.kpi-title {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin-top: 6px;
+}
+
+.kpi-note {
+  font-size: 12px;
+  color: #f59e0b;
+  margin-top: 4px;
+}
+
+/* Dashboard main grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+  margin-top: 0;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
+/* Table styles */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.custom-table th,
+.custom-table td {
+  padding: 10px;
+  border-bottom: 1px solid #ebe5e9;
+  text-align: left;
+  font-size: 14px;
+}
+
+.custom-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
+}
+
+.custom-table td {
+  color: #4b5563;
+}
+
+/* Buttons */
+.btn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s ease;
+}
+
+.btn-approve {
+  background: #22c55e;
+  color: white;
+}
+
+.btn-deny {
+  background: #ef4444;
+  color: white;
+  margin-left: 6px;
+}
+
+.btn-approve:hover {
+  background: #16a34a;
+}
+
+.btn-deny:hover {
+  background: #dc2626;
+}
+
+/* Donut chart */
+.donut-chart {
+  display: block;
+  margin: 0 auto;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* States */
+.loading-text {
+  text-align: center;
+  color: #2563eb;
+}
+
+.error-text {
+  text-align: center;
+  color: #ef4444;
+}
+
+.empty-text {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}

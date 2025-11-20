@@ -1,0 +1,46 @@
+/* IT Admin dashboard: style-only overrides for first two rows */
+
+/* Grid for the stat cards */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Centered card content similar to provided mock */
+.stat-card {
+  text-align: center;
+}
+
+/* Big numbers in deep red */
+.stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 4px 0 6px;
+  color: #0f172a;
+}
+.stat-value.red { color: #991b1b; }
+
+/* Sub values for paired counts */
+.stat-subvalue {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  color: #0f172a;
+}
+
+/* Grey rounded chips */
+.btn.pill {
+  background: #eef2f7;
+  color: #334155;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-weight: 600;
+}
+.btn.pill:hover {
+  background: #e5e7eb;
+}

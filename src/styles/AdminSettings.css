@@ -1,0 +1,75 @@
+.admin-settings {
+  padding: 30px;
+  background-color: #f7f9fc;
+  min-height: 100vh;
+}
+
+.page-title {
+  font-size: 24px;
+  margin-bottom: 30px;
+  color: #333;
+  font-weight: 600;
+}
+
+.settings-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 25px 30px;
+  margin-bottom: 25px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease-in-out;
+}
+
+.settings-card:hover {
+  transform: translateY(-3px);
+}
+
+.section-title {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: #222;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 6px;
+  display: inline-block;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 450px;
+}
+
+.form input,
+.form select {
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.form input:focus,
+.form select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.primary-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.primary-btn:hover {
+  background-color: #0056b3;
+}
