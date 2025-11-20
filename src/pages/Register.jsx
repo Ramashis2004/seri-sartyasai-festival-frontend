@@ -41,7 +41,7 @@ export default function Register() {
             ×
           </button>
         </div>
-        <p>Select your role to continue with us</p>
+        <p>Select your role</p>
 
         <div className="dropdown">
           <select
