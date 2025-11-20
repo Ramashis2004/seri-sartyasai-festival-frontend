@@ -275,7 +275,7 @@ export default function LandingPage() {
             <div className="role-card">
               <div className="role-icon">⭐</div>
               <h3>Register As Master Admin</h3>
-              <p>Master admins oversee the whole festival, manage districts and schools.</p>
+              <p>Master admins oversee the whole festival </p>
               <Link to="/register/master-admin" className="register-link">Register As Master Admin →</Link>
             </div>
           </div>
