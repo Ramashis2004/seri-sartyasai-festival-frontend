@@ -72,19 +72,19 @@ export default function ContactUs() {
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Name</label>
-                <input className="input" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+                <input className="" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="form-group">
                 <label>Email</label>
-                <input className="input" type="email" placeholder="your.email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input className="" type="email" placeholder="your.email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="form-group">
                 <label>Subject</label>
-                <input className="input" placeholder="What is this about?" value={subject} onChange={(e) => setSubject(e.target.value)} />
+                <input className="" placeholder="What is this about?" value={subject} onChange={(e) => setSubject(e.target.value)} />
               </div>
               <div className="form-group">
                 <label>Message</label>
-                <textarea className="input" rows={6} placeholder="Your message..." value={message} onChange={(e) => setMessage(e.target.value)}></textarea>
+                <textarea className="" rows={6} placeholder="Your message..." value={message} onChange={(e) => setMessage(e.target.value)}></textarea>
               </div>
               {status && (
                 <div style={{ marginBottom: 12, color: status.includes("successfully") ? '#166534' : '#7f1d1d' }}>{status}</div>
