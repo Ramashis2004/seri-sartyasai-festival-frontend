@@ -64,7 +64,7 @@ export default function ContactUs() {
 
       <main className="contact-wrap">
         <h1 className="contact-title">Contact Us</h1>
-        <p className="contact-sub">Have questions? We're here to help!</p>
+        <p className="contact-sub">Have questions?  We're here to help!</p>
 
         <div className="contact-grid">
           <section className="contact-card">
