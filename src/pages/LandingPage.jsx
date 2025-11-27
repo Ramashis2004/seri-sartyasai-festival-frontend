@@ -163,7 +163,7 @@ export default function LandingPage() {
             fontSize: 18,
             textShadow: '0 2px 8px rgba(0,0,0,0.5)'
           }}>Celebrating Unity and Talent</p>
-          <div>
+          {/* <div>
             <Link to="/events" style={{
               display: 'inline-block',
               borderRadius: 9999,
@@ -183,7 +183,7 @@ export default function LandingPage() {
               e.target.style.background = '#2f855a';
               e.target.style.transform = 'translateY(0)';
             }}>View Events</Link>
-          </div>
+          </div> */}
         </div>
 
         {/* Full-screen Carousel */}
