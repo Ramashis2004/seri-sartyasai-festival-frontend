@@ -11,7 +11,7 @@ export default function Register() {
     { value: "it-admin", label: "Register as IT Admin", path: "/register/it-admin" },
     { value: "event-coordinator", label: "Register as Event Coordinator", path: "/register/event-coordinator" },
     { value: "district-coordinator", label: "Register as District Coordinator", path: "/register/district-coordinator" },
-    { value: "master-admin", label: "Register as Master Admin", path: "/register/master-admin" },
+    // { value: "master-admin", label: "Register as Master Admin", path: "/register/master-admin" },
   ];
 
   const selected = roles.find(r => r.value === role);
