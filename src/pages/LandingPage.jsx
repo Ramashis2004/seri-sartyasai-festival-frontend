@@ -272,12 +272,12 @@ export default function LandingPage() {
               <Link to="/register/district-coordinator" className="register-link">Register As District Coordinator →</Link>
             </div>
 
-            <div className="role-card">
+            {/* <div className="role-card">
               <div className="role-icon">⭐</div>
               <h3>Register As Master Admin</h3>
               <p>Master admins oversee the whole festival </p>
               <Link to="/register/master-admin" className="register-link">Register As Master Admin →</Link>
-            </div>
+            </div> */}
           </div>
         </section>
 
