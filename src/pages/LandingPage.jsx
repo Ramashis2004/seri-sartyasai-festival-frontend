@@ -241,9 +241,12 @@ export default function LandingPage() {
       <main className="content-wrap">
         <section className="welcome-section">
           <h2>Sri Sathya Sai Festival of Joy</h2>
-          <p className="lead">A Celebration of Talent, Culture, and Unity! 🌟 : Join us for a spectacular event where students of Sri Sathya Sai BalVikas and Sri Sathya Sai Schools come together to showcase their incredible skills and creativity! 🎨🎶 This joyous celebration is all about promoting unity, equality, and the spirit of togetherness. Every student is treated equally and receives a prize, regardless of their position 🏆. Come, be a part of this vibrant extravaganza and witness the talents of our future leaders! 🌈 
+         <p className="lead" style={{ textAlign: "justify" }}>
+  A Celebration of Talent, Culture, and Unity! 🌟 : Join us for a spectacular event where students of Sri Sathya Sai BalVikas and Sri Sathya Sai Schools come together to showcase their incredible skills and creativity! 🎨🎶 This joyous celebration is all about promoting unity, equality, and the spirit of togetherness. Every student is treated equally and receives a prize, regardless of their position 🏆. Come, be a part of this vibrant extravaganza and witness the talents of our future leaders! 🌈 
 
-Jai Sai Ram 🙏</p>
+  Jai Sai Ram 🙏
+</p>
+
 
           <div className="role-cards">
             <div className="role-card">
