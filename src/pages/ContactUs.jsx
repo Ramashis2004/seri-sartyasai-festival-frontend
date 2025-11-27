@@ -95,21 +95,22 @@ export default function ContactUs() {
 
           <div className="contact-right">
             <section className="contact-info-card">
-              <h4>Office Address</h4>
-              <p>Festival of Joy Organization<br/>123 Main Street<br/>City, State 12345<br/>India</p>
+              <h4>Contact person for Festival of Joy</h4>
+              <p>Shri Harihar Parhi<br/>State I/c Parenting </p>
             </section>
 
             <section className="contact-info-card">
-              <h4>Contact Information</h4>
-              <p><strong>Phone:</strong> +91 1234567890</p>
-              <p><strong>Email:</strong> info@festivalofjoy.org</p>
-              <p><strong>Office Hours:</strong> Mon-Fri, 9:00 AM - 5:00 PM</p>
+              <h4>Contact Person for State Festival of Values</h4>
+              <p>Shri Jay Chandra Behera</p>
+             
             </section>
 
             <section className="contact-info-card">
               <h4>Support</h4>
               <p>For technical support or registration issues:</p>
-              <p><strong>Email:</strong> support@festivalofjoy.org</p>
+              <p>Shri Shibaji Ranasingh </p>
+              <p><strong>Phone:</strong> </p>
+              <p><strong>Email:</strong> sssfest2025@gmail.com</p>
             </section>
           </div>
         </div>
