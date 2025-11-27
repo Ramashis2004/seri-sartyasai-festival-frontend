@@ -89,7 +89,7 @@ export default function LandingPage() {
             right: 0,
             height: '100vh',
             width: 280,
-            background: '#88984f',
+            background: 'linear-gradient(90deg,#2f855a,#f6b042)',
             boxShadow: '-4px 0 12px rgba(0,0,0,0.15)',
             transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 0.3s ease',
