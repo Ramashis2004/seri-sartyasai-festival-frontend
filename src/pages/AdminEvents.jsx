@@ -23,7 +23,7 @@ export default function AdminEvents() {
 
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [form, setForm] = useState({ id: "", title: "", date: "", audience: "both", isGroupEvent: false, participantCount: 2 });
+  const [form, setForm] = useState({ id: "", title: "", date: "", gender: "both", audience: "both", isGroupEvent: false, participantCount: 2 });
   const [q, setQ] = useState("");
 
   // district/school selectors
@@ -76,8 +76,8 @@ export default function AdminEvents() {
     setIsEdit(false);
     setForm(
       tab === "district"
-        ? { id: "", title: "", date: "" }
-        : { id: "", title: "", date: "", audience: "both", isGroupEvent: false, participantCount: 2 }
+        ? { id: "", title: "", date: "", gender: "both" }
+        : { id: "", title: "", date: "", gender: "both", audience: "both", isGroupEvent: false, participantCount: 2 }
     );
     setShowModal(true);
   };
@@ -90,11 +90,13 @@ export default function AdminEvents() {
             id: ev._id,
             title: ev.title || "",
             date: ev.date ? String(ev.date).slice(0, 10) : "",
+            gender: ev.gender || "both",
           }
         : {
             id: ev._id,
             title: ev.title || "",
             date: ev.date ? String(ev.date).slice(0, 10) : "",
+            gender: ev.gender || "both",
             audience: ev.audience || "both",
             isGroupEvent: !!ev.isGroupEvent,
             participantCount: ev.participantCount || 2,
@@ -118,6 +120,11 @@ export default function AdminEvents() {
       errors.date = 'Date is required';
     }
     
+    // Gender validation (required for both)
+    if (!form.gender) {
+      errors.gender = 'Please select gender';
+    }
+
     // Audience validation (only for school events)
     if (tab === 'school' && !form.audience) {
       errors.audience = 'Please select an audience';
@@ -158,10 +165,12 @@ export default function AdminEvents() {
           ? {
               title,
               date: form.date || null,
+              gender: form.gender || "both",
             }
           : {
               title,
               date: form.date || null,
+              gender: form.gender || "both",
               audience: form.audience || "both",
               isGroupEvent: !!form.isGroupEvent,
               participantCount: form.isGroupEvent ? Number(form.participantCount) || 2 : null,
@@ -257,6 +266,7 @@ export default function AdminEvents() {
                   <th>Sl No</th>
                   <th>Title</th>
                   <th>Date</th>
+                  <th>Gender</th>
                   {tab === "school" && <th>Audience</th>}
                   <th>Actions</th>
                 </tr>
@@ -268,6 +278,23 @@ export default function AdminEvents() {
                       <td>{i + 1}</td>
                       <td>{ev.title}</td>
                       <td>{ev.date ? new Date(ev.date).toLocaleDateString() : "-"}</td>
+                      <td>
+                        <span style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          backgroundColor: (ev.gender || 'both') === 'boy' ? '#e6f7ff' : (ev.gender || 'both') === 'girl' ? '#fff0f6' : '#f6ffed',
+                          color: (ev.gender || 'both') === 'boy' ? '#1890ff' : (ev.gender || 'both') === 'girl' ? '#c41d7f' : '#389e0d',
+                          textTransform: 'capitalize',
+                          fontWeight: 500
+                        }}>
+                          {(() => {
+                            const g = (ev.gender || 'both');
+                            if (g === 'boy') return 'Boys';
+                            if (g === 'girl') return 'Girls';
+                            return 'Both';
+                          })()}
+                        </span>
+                      </td>
                       {tab === "school" && (
                         <td>
                           <span style={{
@@ -294,7 +321,7 @@ export default function AdminEvents() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={tab === "school" ? "5" : "4"} className="no-results">No events found</td>
+                    <td colSpan={tab === "school" ? "6" : "5"} className="no-results">No events found</td>
                   </tr>
                 )}
               </tbody>
@@ -307,6 +334,19 @@ export default function AdminEvents() {
             <div className="modal-container" onClick={(e) => e.stopPropagation()}>
               <h3 style={{ marginTop: 0 }}>{isEdit ? "Edit Event" : "Add Event"}</h3>
               <form onSubmit={save} className="form" style={{ display: "grid", gap: 10 }}>
+                <label>Gender <span className="required">*</span></label>
+                <select
+                  value={form.gender || ""}
+                  onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                  className={formErrors.gender ? 'error' : ''}
+                >
+                  <option value="">Select Gender</option>
+                  <option value="both">Both</option>
+                  <option value="boy">Only Boys</option>
+                  <option value="girl">Only Girls</option>
+                </select>
+                {formErrors.gender && <div className="error-message">{formErrors.gender}</div>}
+
                 {tab === "school" && (
                   <>
                     <label>Audience <span className="required">*</span></label>

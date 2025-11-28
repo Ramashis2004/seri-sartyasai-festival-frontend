@@ -636,11 +636,18 @@ export default function DistrictDashboard() {
                         <Input type="text" placeholder="Enter full name" defaultValue={v.name || ""} onBlur={(e) => setPGrid(ev._id, "name", e.target.value)} disabled={frozen} />
                       </td>
                       <td style={S.td}>
-                        <Select value={v.gender || ""} onChange={(e) => setPGrid(ev._id, "gender", e.target.value)} disabled={frozen}>
-                          <option value="">Select gender</option>
-                          <option value="boy">Boy</option>
-                          <option value="girl">Girl</option>
-                        </Select>
+                        {(() => {
+                          const allowed = (ev.gender || "both").toLowerCase();
+                          const current = (v.gender || "").toLowerCase();
+                          const safe = allowed === "boy" ? (current === "boy" ? "boy" : "") : allowed === "girl" ? (current === "girl" ? "girl" : "") : current;
+                          return (
+                            <Select value={safe} onChange={(e) => setPGrid(ev._id, "gender", e.target.value)} disabled={frozen}>
+                              <option value="">Select gender</option>
+                              {allowed !== "girl" && <option value="boy">Boy</option>}
+                              {allowed !== "boy" && <option value="girl">Girl</option>}
+                            </Select>
+                          );
+                        })()}
                       </td>
                       <td style={S.td}>
                         <Select defaultValue={v.className || ""} onChange={(e) => setPGrid(ev._id, "className", e.target.value)} disabled={frozen}>

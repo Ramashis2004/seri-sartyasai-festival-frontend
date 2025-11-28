@@ -1129,16 +1129,23 @@ export default function SchoolDashboard() {
                         />
                       </td>
                       <td style={S.td}>
-                        <select
-                          defaultValue={v.gender || ""}
-                          onChange={(e) => setGridValue(ev._id, grp, i, "gender", e.target.value)}
-                          style={{ width: "100%", padding: "8px" }}
-                          disabled={isEventLocked(ev)}
-                        >
-                          <option value="">Select gender</option>
-                          <option value="boy">Boy</option>
-                          <option value="girl">Girl</option>
-                        </select>
+                        {(() => {
+                          const allowed = (ev.gender || "both").toLowerCase();
+                          const current = (v.gender || "").toLowerCase();
+                          const safeValue = allowed === "boy" ? (current === "boy" ? "boy" : "") : allowed === "girl" ? (current === "girl" ? "girl" : "") : current;
+                          return (
+                            <select
+                              defaultValue={safeValue}
+                              onChange={(e) => setGridValue(ev._id, grp, i, "gender", e.target.value)}
+                              style={{ width: "100%", padding: "8px" }}
+                              disabled={isEventLocked(ev)}
+                            >
+                              <option value="">Select gender</option>
+                              {allowed !== "girl" && <option value="boy">Boy</option>}
+                              {allowed !== "boy" && <option value="girl">Girl</option>}
+                            </select>
+                          );
+                        })()}
                       </td>
                       <td style={S.td}>
                         <select
