@@ -329,6 +329,120 @@ export default function LandingPage() {
           )}
         </section>
       </main>
+       <footer className="dems-footer">
+        <div style={{ textAlign: 'center' }}>
+          <div className="footer-container">
+            <div className="footer-logo">
+              <img src="/images/SSSBV-1-removebg-preview.png" alt="Logo 1" />
+            </div>
+            <div className="footer-logo">
+              <img src="/images/SSSSO.png" alt="Logo 2" />
+            </div>
+            <div className="divider"></div>
+            <div className="footer-content">
+              <a href="mailto:contact@sathyasaibalvikas.org" className="contact-email">
+                <span className="email-icon">✉</span>
+                <span>contact@sathyasaibalvikas.org</span>
+              </a>
+              <span className="organization-name">SRI SATHYA SAI SEVA ORGANISATIONS, ODISHA</span>
+            </div>
+          </div>
+        </div>
+        <style>{`
+          .dems-footer {
+            background: linear-gradient(135deg, #f8f4ed 0%, #fdf9f3 100%);
+            padding: 1rem 3rem;
+            width: 100%;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+          }
+          .dems-footer .footer-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 1.5rem;
+          }
+          .dems-footer .footer-logo {
+            flex-shrink: 0;
+          }
+          .dems-footer .footer-logo img {
+            width: 70px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+          }
+          .dems-footer .footer-logo:hover img {
+            transform: scale(1.05);
+          }
+          .dems-footer .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            text-align: left;
+          }
+          .dems-footer .social-handle {
+            color: #333;
+            font-size: 0.95rem;
+            font-weight: 600;
+          }
+          .dems-footer .organization-name {
+            color: #333;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .dems-footer .divider {
+            width: 1px;
+            height: 50px;
+            background: #ddd;
+            margin: 0 1rem;
+          }
+          .dems-footer .contact-email {
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #8b4513;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: color 0.3s ease;
+          }
+          .dems-footer .contact-email:hover {
+            color: #d2691e;
+          }
+          .dems-footer .email-icon {
+            font-size: 1.3rem;
+          }
+          .dems-footer .copyright {
+            color: #777;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 1rem;
+          }
+          @media (max-width: 768px) {
+            .dems-footer {
+              padding: 1.5rem 1rem;
+            }
+            .dems-footer .footer-container {
+              flex-wrap: wrap;
+              gap: 1rem;
+            }
+            .dems-footer .footer-logo img {
+              width: 50px;
+              height: 50px;
+            }
+            .dems-footer .divider {
+              display: none;
+            }
+            .dems-footer .organization-name {
+              font-size: 0.75rem;
+            }
+            .dems-footer .social-handle {
+              font-size: 0.85rem;
+            }
+          }
+        `}</style>
+      </footer>
     </div>
   );
 }
