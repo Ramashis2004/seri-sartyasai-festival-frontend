@@ -39,7 +39,7 @@ export const duUpdateTeacher = async (id, payload) => {
   return data;
 };
 export const duDeleteTeacher = async (id) => {
-  const { data } = await API.delete(`/api/district-user/teachers/${id}`);
+  const { data } = await API.delete(`/api/district-user/teachers/delete/${id}`);
   return data;
 };
 
