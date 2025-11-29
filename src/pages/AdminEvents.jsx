@@ -153,10 +153,29 @@ export default function AdminEvents() {
       const title = (form.title || "").trim();
 
       // Enforce unique event title (case-insensitive), excluding current editing id
-      const normalized = title.toLowerCase();
-      const dup = events.some((ev) => ev && (ev._id !== form.id) && String(ev.title || "").toLowerCase() === normalized);
+     // Enforce unique event title (case-insensitive), excluding current editing id
+   // Normalize values
+      const normalizedTitle = String(title || "").trim().toLowerCase();
+      const normalizedAudience = String(form.audience || "").toLowerCase();
+
+      // Duplicate check logic
+      const dup = events.some((ev) => {
+        if (!ev || ev._id === form.id) return false;
+
+        const evTitle = String(ev.title || "").toLowerCase();
+        const evAudience = String(ev.audience || "").toLowerCase();
+
+        // District tab → audience not considered
+        if (tab === "district") {
+          return evTitle === normalizedTitle;
+        }
+
+        // Non-district tab → check name + audience
+        return evTitle === normalizedTitle && evAudience === normalizedAudience;
+      });
+
       if (dup) {
-        alert("An event with the same name already exists.");
+        alert("An event with the same name and same audience already exists.");
         return;
       }
 
