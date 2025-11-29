@@ -141,7 +141,7 @@ export default function Events() {
                 )}
                 {schoolEvents.map((e) => (
                   <div key={e.id} className="card">
-                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{e.name || e.title}</div>
+                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{e.name || e.title}({e.audience})</div>
                     <div style={{ color: '#6b7280', fontSize: 13 }}>{e.description || e.desc}</div>
                   </div>
                 ))}

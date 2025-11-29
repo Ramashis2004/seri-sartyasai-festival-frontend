@@ -1267,8 +1267,8 @@ export default function SchoolDashboard() {
                   style={{ width: "100%", padding: "8px" }}
                 >
                   <option value="">Select gender</option>
-                  <option value="boy">Boy</option>
-                  <option value="girl">Girl</option>
+                  <option value="boy">Gents</option>
+                  <option value="girl">Ladies</option>
                 </select>
               </td>
               <td style={{ ...S.td, width: 120 }}>
