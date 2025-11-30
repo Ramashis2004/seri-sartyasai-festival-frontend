@@ -702,7 +702,7 @@ export default function ITAdminTeachers() {
                     <td>{i + 1}</td>
                     <td>{r.name}</td>
                     <td>{r.phone || "-"}</td>
-                    <td>{r.gender || "-"}</td>
+                    <td>{r.gender==="boy"?"Gents":"Ladies" || "-"}</td>
                     <td>{getRoleText(r) || "-"}</td>
                     <td>{r.schoolName || "-"}</td>
                     <td>{r.districtName || '-'}</td>

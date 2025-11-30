@@ -259,7 +259,7 @@ export default function DistrictDashboard() {
                 }} 
                 onClick={onApply}
               >
-                Submit
+                {savingParticipants ? "Saving..." :savingTeachers ? "Saving...": "Submit"}
               </Button>
             )}
           </div>
@@ -348,22 +348,44 @@ export default function DistrictDashboard() {
   const [savingParticipants, setSavingParticipants] = useState(false);
 
   const refreshParticipants = async () => {
-    try {
-      const data = await districtUserApi.duListParticipants();
-      const arr = Array.isArray(data) ? data : [];
-      setParticipants(arr);
-      if (!localStorage.getItem(LS_PARTICIPANTS_KEY)) {
-        const grid = {};
-        arr.forEach((p) => {
-          const evId = p.eventId;
-          if (!evId) return;
-          grid[evId] = { name: p.name || "", gender: (p.gender || "").toLowerCase(), className: p.className || "", _id: p._id };
-        });
-        setParticipantsGrid(grid);
-        setParticipantsDirty(false);
-      }
-    } catch (_) {}
-  };
+  try {
+    const data = await districtUserApi.duListParticipants();
+    const list = Array.isArray(data) ? data : [];
+    setParticipants(list);
+
+    // Check localStorage only if it contains actual unsaved edits
+    const stored = localStorage.getItem(LS_PARTICIPANTS_KEY);
+    const storedGrid = stored ? JSON.parse(stored) : null;
+    const hasStored = storedGrid && typeof storedGrid === "object" && Object.keys(storedGrid).length > 0;
+
+    // If user has unsaved edits → load from LS
+    if (hasStored) {
+      setParticipantsGrid(storedGrid);
+      setParticipantsDirty(true);
+      return;
+    }
+
+    // Otherwise → load from API
+    const grid = {};
+    list.forEach(p => {
+      const evId = p.eventId;
+      if (!evId) return;
+      grid[evId] = {
+        name: p.name || "",
+        gender: (p.gender || "").toLowerCase(),
+        className: p.className || "",
+        _id: p._id,
+      };
+    });
+
+    setParticipantsGrid(grid);
+    setParticipantsDirty(false);
+
+  } catch (err) {
+    console.error("Participants load error:", err);
+  }
+};
+
 
   // Load events and participants on mount and hydrate participantsGrid from localStorage (if present)
   useEffect(() => {
@@ -423,35 +445,102 @@ export default function DistrictDashboard() {
     setShowPreview(true);
   };
 
-  const confirmSaveParticipants = async () => {
-    const result = await Swal.fire({
-      title: "Confirm Save",
-      text: `Do you want to save ${participants.length} participant(s)?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, save",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#2563eb",
+  const gatherFullParticipants = () => {
+  const list = [];
+
+  (events || []).forEach((ev) => {
+    const v = participantsGrid[ev._id] || {};
+
+    list.push({
+      _id: v._id,
+      eventId: ev._id,
+      eventTitle: ev.title,
+      name: v.name || "",
+      gender: v.gender || "",
+      className: v.className || "",
     });
-    if (!result.isConfirmed) return;
-    try {
-      setSavingParticipants(true);
-      for (const p of participants) {
-        if (isEventFrozen(p.eventId)) continue; // skip frozen
-        if (p._id) await districtUserApi.duUpdateParticipant(p._id, { name: p.name, gender: p.gender, className: p.className });
-        else await districtUserApi.duCreateParticipant({ eventId: p.eventId, name: p.name, gender: p.gender, className: p.className });
+  });
+
+  return list;
+};
+
+const confirmSaveParticipants = async () => {
+  if (savingParticipants) return; // ⛔ Prevent double click
+
+  const fullList = gatherFullParticipants();
+
+  const result = await Swal.fire({
+    title: "Confirm Save",
+    text: `Do you want to save ${fullList.length} participant(s)?`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Yes, save",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#2563eb",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    setSavingParticipants(true);
+
+    const apiCalls = fullList.map(async (p) => {
+      if (isEventFrozen(p.eventId)) return;
+
+      const hasAll = p.name && p.gender && p.className;
+
+      // DELETE
+      if (p._id && !hasAll) {
+        return districtUserApi.duDeleteParticipant(p._id);
       }
-      try { localStorage.removeItem(LS_PARTICIPANTS_KEY); } catch (_) {}
-      await refreshParticipants();
-      setParticipantsDirty(false);
-      setShowPreview(false);
-      await Swal.fire({ icon: "success", title: "Saved!", text: "Participants saved successfully." });
-    } catch (_) {
-      // ignore
-    } finally {
-      setSavingParticipants(false);
-    }
-  };
+
+      // UPDATE
+      if (p._id && hasAll) {
+        return districtUserApi.duUpdateParticipant(p._id, {
+          name: p.name,
+          gender: p.gender,
+          className: p.className,
+        });
+      }
+
+      // CREATE
+      if (!p._id && hasAll) {
+        return districtUserApi.duCreateParticipant({
+          eventId: p.eventId,
+          name: p.name,
+          gender: p.gender,
+          className: p.className,
+        });
+      }
+
+      return;
+    });
+
+    // Run all calls in parallel 🚀
+    await Promise.all(apiCalls);
+
+    // Clear local saved edits
+    try { localStorage.removeItem(LS_PARTICIPANTS_KEY); } catch (_) {}
+
+    await refreshParticipants();
+
+    // 🔥 Close preview BEFORE showing Swal success
+    setShowPreview(false);
+    setParticipantsDirty(false);
+
+    await Swal.fire({
+      icon: "success",
+      title: "Saved!",
+      text: "Participants saved successfully.",
+    });
+
+  } catch (err) {
+    console.error("Save error:", err);
+  } finally {
+    setSavingParticipants(false);
+  }
+};
+
 
   // Teachers (Accompanying Guru)
   const [teachers, setTeachers] = useState([]);
@@ -475,36 +564,71 @@ export default function DistrictDashboard() {
   ];
 
   const refreshTeachers = async () => {
-    try {
-      const data = await districtUserApi.duListTeachers();
-      setTeachers(Array.isArray(data) ? data : []);
-      if (!localStorage.getItem(LS_TEACHERS_KEY)) {
-        const list = Array.isArray(data) ? data : [];
-        const rows = [];
-        const sec = list.find((t) => (t.member || "").toLowerCase() === "secretary_manager");
-        if (sec) rows.push({ member: "secretary_manager", name: sec.name || "", mobile: sec.mobile || "", gender: (sec.gender || "").toLowerCase(), _id: sec._id });
-        list
-          .filter((t) => (t.member || "").toLowerCase() !== "secretary_manager")
-          .forEach((t) => {
-            const raw = t.member || "mc_member";
-            const code = raw.toLowerCase();
-            const isKnown = presetMembers.includes(code);
-            rows.push({
-              member: isKnown ? code : "other",
-              memberOther: isKnown ? "" : raw,
-              name: t.name || "",
-              mobile: t.mobile || "",
-              gender: (t.gender || "").toLowerCase(),
-              _id: t._id,
-            });
-          });
-        if (rows.length === 0) rows.push({ member: "secretary_manager", name: "", mobile: "", gender: "" });
-        setTeachersGrid(rows);
-        setTeachersDirty(false);
-        setTFormKey((k) => k + 1);
-      }
-    } catch (_) {}
-  };
+  try {
+    const data = await districtUserApi.duListTeachers();
+    const list = Array.isArray(data) ? data : [];
+    setTeachers(list);
+
+    // Check localStorage only if it has REAL unsaved values
+    const stored = localStorage.getItem(LS_TEACHERS_KEY);
+    const storedList = stored ? JSON.parse(stored) : null;
+    const hasStored = Array.isArray(storedList) && storedList.length > 0;
+
+    // If user has unsaved edits, use stored data
+    if (hasStored) {
+      setTeachersGrid(storedList);
+      setTeachersDirty(true);
+      setTFormKey((k) => k + 1);
+      return;
+    }
+
+    // Otherwise → Load fresh data from API
+    const rows = [];
+
+    // Insert secretary_manager first (if exists)
+    const sec = list.find(t => (t.member || "").toLowerCase() === "secretary_manager");
+    if (sec) {
+      rows.push({
+        member: "secretary_manager",
+        name: sec.name || "",
+        mobile: sec.mobile || "",
+        gender: (sec.gender || "").toLowerCase(),
+        _id: sec._id
+      });
+    }
+
+    // Others
+    list
+      .filter(t => (t.member || "").toLowerCase() !== "secretary_manager")
+      .forEach(t => {
+        const rawMember = t.member || "mc_member";
+        const code = rawMember.toLowerCase();
+        const isKnown = presetMembers.includes(code);
+
+        rows.push({
+          member: isKnown ? code : "other",
+          memberOther: isKnown ? "" : rawMember,
+          name: t.name || "",
+          mobile: t.mobile || "",
+          gender: (t.gender || "").toLowerCase(),
+          _id: t._id,
+        });
+      });
+
+    // Ensure at least one row exists
+    if (!rows.length) {
+      rows.push({ member: "secretary_manager", name: "", mobile: "", gender: "" });
+    }
+
+    setTeachersGrid(rows);
+    setTeachersDirty(false);
+    setTFormKey(k => k + 1);
+
+  } catch (err) {
+    console.error("Teacher load error:", err);
+  }
+};
+
   useEffect(() => { refreshTeachers(); }, []);
 
   const setTGrid = (index, field, value) => {
@@ -550,36 +674,64 @@ export default function DistrictDashboard() {
   };
 
   const confirmSaveTeachers = async () => {
-    const payloads = gatherTeachersPayload();
-    if (!payloads.length) { alert("Please fill at least one guru"); return; }
-    const result = await Swal.fire({
-      title: "Confirm Save",
-      text: `Do you want to save ${payloads.length} item(s)?`,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, save",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#2563eb",
+  if (savingTeachers) return; // ⛔ Prevent double save
+
+  const payloads = gatherTeachersPayload();
+  if (!payloads.length) {
+    alert("Please fill at least one guru");
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: "Confirm Save",
+    text: `Do you want to save ${payloads.length} item(s)?`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Yes, save",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#2563eb",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    setSavingTeachers(true);
+
+    const apiCalls = payloads.map((row) => {
+      const body = {
+        member: row.member,
+        name: row.name,
+        mobile: row.mobile,
+        gender: row.gender,
+      };
+
+      return row._id
+        ? districtUserApi.duUpdateTeacher(row._id, body)
+        : districtUserApi.duCreateTeacher(body);
     });
-    if (!result.isConfirmed) return;
-    try {
-      setSavingTeachers(true);
-      for (const row of payloads) {
-        const body = { member: row.member, name: row.name, mobile: row.mobile, gender: row.gender };
-        if (row._id) await districtUserApi.duUpdateTeacher(row._id, body);
-        else await districtUserApi.duCreateTeacher(body);
-      }
-      try { localStorage.removeItem(LS_TEACHERS_KEY); } catch (_) {}
-      await refreshTeachers();
-      setTeachersDirty(false);
-      setShowTeacherPreview(false);
-      await Swal.fire({ icon: "success", title: "Saved!", text: "Teachers saved successfully." });
-    } catch (_) {
-      // ignore
-    } finally {
-      setSavingTeachers(false);
-    }
-  };
+
+    await Promise.all(apiCalls);
+
+    try { localStorage.removeItem(LS_TEACHERS_KEY); } catch (_) {}
+
+    await refreshTeachers();
+
+    // 🔥 Close preview BEFORE success popup
+    setShowTeacherPreview(false);
+    setTeachersDirty(false);
+
+    await Swal.fire({
+      icon: "success",
+      title: "Saved!",
+      text: "Teachers saved successfully.",
+    });
+
+  } catch (_) {
+    // ignore
+  } finally {
+    setSavingTeachers(false);
+  }
+};
 
   const renderParticipants = () => (
     <div style={{ marginTop: 8 }}>
@@ -611,6 +763,7 @@ export default function DistrictDashboard() {
           <table style={S.table}>
             <thead>
               <tr>
+                <th  style={{...S.th, minWidth: '10px'}}>Sl No</th>
                 <th style={{...S.th, minWidth: '120px'}}>Event(s)</th>
                 <th style={{...S.th, minWidth: '180px'}}>Name of Participant</th>
                 <th style={{...S.th, minWidth: '120px'}}>Boy/Girl</th>
@@ -623,11 +776,12 @@ export default function DistrictDashboard() {
               ) : (events || []).length === 0 ? (
                 <tr><td style={{ ...S.td, textAlign: "center", color: "#64748b" }} colSpan={4}>No events available</td></tr>
               ) : (
-                events.map((ev) => {
+                events.map((ev,i) => {
                   const v = participantsGrid[ev._id] || {};
                   const frozen = isEventFrozen(ev._id);
                   return (
                     <tr key={ev._id}>
+                      <td>{i+1}</td>
                       <td style={S.td}>
                         {ev.title}
                         {frozen && (<span style={{ marginLeft: 8, color: '#b91c1c', fontWeight: 700 }}>(Frozen)</span>)}
@@ -671,17 +825,21 @@ export default function DistrictDashboard() {
             {participantsDirty ? "Don't Forget To Click The Submit Button" : ""}
           </div>
           <div style={{ display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' }, gap: 12 }}>
-            <Button 
-              onClick={() => { 
-                // Clear only non-frozen rows
+            <Button
+              onClick={() => {
+                // Reset the form but do NOT touch localStorage
                 setParticipantsGrid((prev) => {
                   const next = {};
-                  Object.keys(prev || {}).forEach((k) => { if (isEventFrozen(k)) next[k] = prev[k]; });
-                  try { localStorage.setItem(LS_PARTICIPANTS_KEY, JSON.stringify(next)); } catch(_) {}
+                  Object.keys(prev || {}).forEach((k) => {
+                    if (isEventFrozen(k)) next[k] = prev[k];   // keep frozen rows
+                    else next[k] = {};                         // clear editable rows
+                  });
                   return next;
                 });
+
+                // Do NOT write to localStorage here
               }}
-              style={{ borderColor: '#e2e8f0', '&:hover': { backgroundColor: '#f8fafc' } }}
+              style={{ borderColor: '#e2e8f0' }}
             >
               Reset
             </Button>
@@ -704,6 +862,7 @@ export default function DistrictDashboard() {
           <table style={S.table}>
             <thead>
               <tr>
+                <th style={{...S.th, minWidth: '50px'}}>Sl No</th>
                 <th style={{...S.th, minWidth: '150px'}}>Designation</th>
                 <th style={{...S.th, minWidth: '180px'}}>Name of Participant</th>
                 <th style={{...S.th, minWidth: '130px'}}>Mobile No</th>
@@ -714,6 +873,7 @@ export default function DistrictDashboard() {
             <tbody>
               {(teachersGrid || []).map((row, idx) => (
                 <tr key={idx}>
+                  <td>{idx+1}</td>
                   <td style={S.td}>
                     <div style={{ minWidth: '150px' }}>
                       <Select 
@@ -745,8 +905,8 @@ export default function DistrictDashboard() {
                   <td style={S.td}>
                     <Select value={row.gender || ""} onChange={(e) => setTGrid(idx, "gender", e.target.value)}>
                       <option value="">Select gender</option>
-                      <option value="boy">Boy</option>
-                      <option value="girl">Girl</option>
+                      <option value="boy">Gents</option>
+                      <option value="girl">Ladies</option>
                     </Select>
                   </td>
                   <td style={S.td}>
@@ -853,7 +1013,7 @@ export default function DistrictDashboard() {
                     <td style={S.td}>{t.member}</td>
                     <td style={S.td}>{t.name}</td>
                     <td style={S.td}>{t.mobile}</td>
-                    <td style={S.td}>{t.gender}</td>
+                    <td style={S.td}>{t.gender==="boy"?"Gents":"Ladies"}</td>
                   </tr>
                 ))}
               </tbody>

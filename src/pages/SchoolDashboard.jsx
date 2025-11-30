@@ -1080,13 +1080,13 @@ export default function SchoolDashboard() {
           <div>{user?.mobile || user?.phone || "-"}</div>
         </div>
 
-        <TableShell columns={[{ label: "Event(s)" }, { label: "Group" }, { label: "Name of the Participant" }, { label: "Boy/Girl" }, { label: "Class" }]}>
+        <TableShell columns={[{label:"SL No"},{ label: "Event(s)" }, { label: "Group" }, { label: "Name of the Participant" }, { label: "Boy/Girl" }, { label: "Class" }]}>
           {(events || []).length === 0 ? (
             <tr>
               <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={5}>No events available</td>
             </tr>
           ) : (
-            events.flatMap((ev) => {
+            events.flatMap((ev,idx) => {
               const byEvent = participantsGrid[ev._id] || {};
               const groups = (ev.audience === "junior" ? ["junior"] : ev.audience === "senior" ? ["senior"] : ["junior", "senior"]);
               const rowsCount = ev.isGroupEvent ? Math.max(2, Number(ev.participantCount || 2)) : 1;
@@ -1097,6 +1097,7 @@ export default function SchoolDashboard() {
                   const v = arr[i] || {};
                   rows.push(
                     <tr key={`${ev._id}_${grp}_${i}`}>
+                      <td>{idx+1}</td>
                       <td style={S.td}>
                         {ev.title}{ev.isGroupEvent ? ` (Member ${i + 1}/${rowsCount})` : ""}
                         <span
@@ -1238,25 +1239,25 @@ export default function SchoolDashboard() {
           <td style={S.td}>
             {/* Mobile No (previously Name of the Participant) */}
            <Input
-  type="tel"
-  placeholder="Enter mobile"
-  defaultValue={row.mobile || ""}
-  maxLength={10}
-  onInput={(e) => {
-    // remove any non-numeric characters (also works for paste)
-    e.target.value = e.target.value.replace(/\D/g, "");
-  }}
-  onBlur={(e) => {
-    const value = e.target.value;
+            type="tel"
+            placeholder="Enter mobile"
+            defaultValue={row.mobile || ""}
+            maxLength={10}
+            onInput={(e) => {
+              // remove any non-numeric characters (also works for paste)
+              e.target.value = e.target.value.replace(/\D/g, "");
+            }}
+            onBlur={(e) => {
+              const value = e.target.value;
 
-    if (value.length !== 10) {
-      alert("Mobile number must be exactly 10 digits");
-      return;
-    }
+              if (value.length !== 10) {
+                alert("Mobile number must be exactly 10 digits");
+                return;
+              }
 
-    setTeacherGridValue("others", idx, "mobile", value);
-  }}
-/>
+              setTeacherGridValue("others", idx, "mobile", value);
+            }}
+          />
 
           </td>
 
@@ -1497,7 +1498,7 @@ export default function SchoolDashboard() {
                       <td style={S.td}>{label}</td>
                       <td style={S.td}>{p.name}</td>
                       <td style={S.td}>{p.mobile}</td>
-                      <td style={S.td}>{p.gender}</td>
+                      <td style={S.td}>{p.gender==="boy"?"Gents":"Ladies"}</td>
                     </tr>
                   );
                 });
