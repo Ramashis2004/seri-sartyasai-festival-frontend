@@ -369,8 +369,26 @@ export default function ITAdminParticipants() {
           const sName = schoolObj?.schoolName || addSchoolName || "";
           setAddSchoolName(sName);
           const existing = Array.isArray(await itListParticipants({ scope: 'school', districtId: addDistrictId, schoolName: sName })) ? await itListParticipants({ scope: 'school', districtId: addDistrictId, schoolName: sName }) : [];
+          const countsByEvent = existing.reduce((acc, p) => {
+            const id = String(p.eventId || p.event || p._id || "");
+            if (!id) return acc;
+            acc[id] = (acc[id] || 0) + 1;
+            return acc;
+          }, {});
           const filledEventIds = new Set(existing.map((p) => String(p.eventId || p.event || p._id)));
-          const available = all.filter((e) => !filledEventIds.has(String(e._id)));
+          const available = all.filter((e) => {
+            const id = String(e._id);
+            // If no participant yet, event is available
+            if (!filledEventIds.has(id)) return true;
+            // For group events, allow selection until participantCount is reached
+            const isGroup = !!e.isGroupEvent && typeof e.participantCount === 'number' && e.participantCount >= 2;
+            if (isGroup) {
+              const used = countsByEvent[id] || 0;
+              return used < e.participantCount;
+            }
+            // Non-group events remain one-participant only
+            return false;
+          });
           setModalEvents(available);
         } else if (addType === "district") {
           if (!addDistrictId) { setComputingEvents(false); return; }
