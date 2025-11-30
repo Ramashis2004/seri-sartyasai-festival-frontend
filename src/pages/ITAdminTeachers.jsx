@@ -56,6 +56,7 @@ export default function ITAdminTeachers() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [anchorId, setAnchorId] = useState("");
 
   // Initialize filters from query string (supports links from Overview)
   useEffect(() => {
@@ -289,9 +290,19 @@ export default function ITAdminTeachers() {
 
   useEffect(() => { load(); }, [scope, districtId, schoolName, eventId, present, frozen, q]);
 
+  useEffect(() => {
+    if (!anchorId) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(`teacher-row-${anchorId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [items, anchorId]);
+
   const onTogglePresent = async (row) => {
     if (row.frozen) return;
     try {
+      setAnchorId(String(row._id));
       await itUpdateTeacher(row._id, { source: row.source, updates: { present: !row.present } });
       await load();
     } catch {}
@@ -433,6 +444,7 @@ export default function ITAdminTeachers() {
     if (!formValues) return;
 
     try {
+      setAnchorId(String(row._id));
       // Create a new payload without userType since it's not allowed to be updated
       const { userType, ...updates } = formValues;
       const payload = { ...updates };
@@ -503,6 +515,7 @@ export default function ITAdminTeachers() {
 
   const onToggleFreezeRow = async (row) => {
     try {
+      setAnchorId(String(row._id));
       await itUpdateTeacher(row._id, { source: row.source, updates: { frozen: !row.frozen } });
       await load();
     } catch {}
@@ -685,7 +698,7 @@ export default function ITAdminTeachers() {
               </thead>
               <tbody>
                 {filtered.length ? filtered.map((r, i) => (
-                  <tr key={r._id} style={{ backgroundColor: r.present ? '#b5d6a7' : 'transparent' }}>
+                  <tr key={r._id} id={`teacher-row-${r._id}`} style={{ backgroundColor: r.present ? '#b5d6a7' : 'transparent' }}>
                     <td>{i + 1}</td>
                     <td>{r.name}</td>
                     <td>{r.phone || "-"}</td>
