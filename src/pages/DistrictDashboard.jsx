@@ -673,46 +673,37 @@ export default function DistrictDashboard() {
     confirmButtonText: "Yes, save",
     cancelButtonText: "Cancel",
     confirmButtonColor: "#2563eb",
+    showLoaderOnConfirm: true,
+    allowOutsideClick: () => !Swal.isLoading(),
+    preConfirm: async () => {
+      try {
+        setSavingTeachers(true);
+        const apiCalls = payloads.map((row) => {
+          const body = { member: row.member, name: row.name, mobile: row.mobile, gender: row.gender };
+          return row._id
+            ? districtUserApi.duUpdateTeacher(row._id, body)
+            : districtUserApi.duCreateTeacher(body);
+        });
+        await Promise.all(apiCalls);
+      } catch (e) {
+        Swal.showValidationMessage("Failed to save. Please try again.");
+        throw e;
+      } finally {
+        setSavingTeachers(false);
+      }
+    },
   });
 
   if (!result.isConfirmed) return;
 
   try {
-    setSavingTeachers(true);
-
-    const apiCalls = payloads.map((row) => {
-      const body = {
-        member: row.member,
-        name: row.name,
-        mobile: row.mobile,
-        gender: row.gender,
-      };
-
-      return row._id
-        ? districtUserApi.duUpdateTeacher(row._id, body)
-        : districtUserApi.duCreateTeacher(body);
-    });
-
-    await Promise.all(apiCalls);
-
     try { localStorage.removeItem(LS_TEACHERS_KEY); } catch (_) {}
-
     await refreshTeachers();
-
-    // 🔥 Close preview BEFORE success popup
     setShowTeacherPreview(false);
     setTeachersDirty(false);
-
-    await Swal.fire({
-      icon: "success",
-      title: "Saved!",
-      text: "Teachers saved successfully.",
-    });
-
+    await Swal.fire({ icon: "success", title: "Saved!", text: "Teachers saved successfully." });
   } catch (_) {
     // ignore
-  } finally {
-    setSavingTeachers(false);
   }
 };
 
