@@ -194,82 +194,53 @@ export default function DistrictDashboard() {
         boxShadow: "0 24px 60px rgba(2,6,23,0.25)", 
         width: "min(720px, 96vw)", 
         maxHeight: "90vh", 
-        overflow: "auto",
-        '&::-webkit-scrollbar': {
-          width: '6px',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: '#c1c1c1',
-          borderRadius: '3px',
-        },
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}>
         <div style={{ 
-          padding: { xs: '16px', sm: '20px' }, 
+          padding: 20, 
           borderBottom: "1px solid #e2e8f0", 
           display: "flex", 
-          flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: "space-between", 
-          alignItems: { xs: 'stretch', sm: 'center' },
-          gap: { xs: '12px', sm: '16px' },
+          alignItems: "center",
+          gap: 12,
         }}>
-          <h3 style={{ 
-            margin: 0, 
-            fontSize: { xs: '18px', sm: '20px' },
-            textAlign: { xs: 'center', sm: 'left' },
-          }}>{title}</h3>
-          <div style={{ 
-            display: 'flex',
-            justifyContent: { xs: 'center', sm: 'flex-end' },
-            gap: '10px',
-          }}>
-            {/* {onClear && (
-              <Button 
-                onClick={onClear}
-                style={{
-                  borderColor: '#e2e8f0',
-                  '&:hover': {
-                    backgroundColor: '#f8fafc',
-                  }
-                }}
-              >
-                Clear
-              </Button>
-            )} */}
+          <h3 style={{ margin: 0, fontSize: 20 }}>{title}</h3>
+          <div>
             <Button 
               onClick={onClose}
               style={{
                 borderColor: '#e2e8f0',
-                '&:hover': {
-                  backgroundColor: '#f8fafc',
-                }
               }}
             >
               Close
             </Button>
-            {onApply && (
-              <Button 
-                style={{ 
-                  backgroundColor: "#2563eb", 
-                  color: "#fff", 
-                  borderColor: "#2563eb",
-                  '&:hover': {
-                    backgroundColor: '#1d4ed8',
-                    borderColor: '#1d4ed8',
-                  }
-                }} 
-                onClick={onApply}
-              >
-                {savingParticipants ? "Saving..." :savingTeachers ? "Saving...": "Submit"}
-              </Button>
-            )}
           </div>
         </div>
         <div style={{ 
-          padding: { xs: '16px', sm: '20px' },
-          maxHeight: 'calc(90vh - 100px)',
+          padding: 20,
           overflowY: 'auto',
+          maxHeight: 'calc(90vh - 140px)'
         }}>
           {children}
+        </div>
+        <div style={{ 
+          padding: 16,
+          borderTop: '1px solid #e2e8f0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <Button onClick={onClose} style={{ borderColor: '#e2e8f0' }}>Back</Button>
+          {onApply && (
+            <Button 
+              style={{ backgroundColor: '#2563eb', color: '#fff', borderColor: '#2563eb' }}
+              onClick={onApply}
+            >
+              {savingParticipants || savingTeachers ? 'Saving...' : 'Confirm & Save'}
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -949,17 +920,37 @@ export default function DistrictDashboard() {
       {renderContent()}
       {showPreview && (
         <Modal title="Preview Participants" onClose={() => setShowPreview(false)} onApply={confirmSaveParticipants} onClear={() => setShowPreview(false)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12 }}>
+            {[ 
+              { label: 'District Name', value: districtName || user?.districtName || user?.district || '-' },
+              { label: 'Contact Person', value: user?.name || '-' },
+              { label: 'Mobile Number', value: user?.mobile || '-' },
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderRadius: 10, background: '#f8fafc' }}>
+                <div style={{ fontWeight: 600, color: '#475569', minWidth: 140 }}>{item.label}</div>
+                <div style={{ color: '#1e293b', fontWeight: 500, flex: 1, textAlign: 'right' }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
           <div style={S.tableWrap}>
             <table style={S.table}>
-              <thead><tr><th style={S.th}>#</th><th style={S.th}>Name</th><th style={S.th}>Event</th><th style={S.th}>Gender</th><th style={S.th}>Class</th></tr></thead>
+              <thead>
+                <tr>
+                  <th style={S.th}>Sl No</th>
+                  <th style={S.th}>Event(s)</th>
+                  <th style={S.th}>Name of the Participant</th>
+                  <th style={S.th}>Boy/Girl</th>
+                  <th style={S.th}>Class</th>
+                </tr>
+              </thead>
               <tbody>
-                {(participants || []).map((p, idx) => (
+                {gatherPreviewList().map((p, idx) => (
                   <tr key={idx}>
                     <td style={S.td}>{idx + 1}</td>
+                    <td style={S.td}>{p.eventTitle || (events.find((e) => e._id === p.eventId)?.title) || '-' }{isEventFrozen(p.eventId) && (<span style={{ marginLeft: 8, color: '#b91c1c', fontWeight: 700 }}>(Frozen)</span>)}</td>
                     <td style={S.td}>{p.name}</td>
-                    <td style={S.td}>{p.eventTitle || (events.find((e) => e._id === p.eventId)?.title) || "-"}{isEventFrozen(p.eventId) && (<span style={{ marginLeft: 8, color: '#b91c1c', fontWeight: 700 }}>(Frozen)</span>)}</td>
-                    <td style={S.td}>{p.gender || "-"}</td>
-                    <td style={S.td}>{p.className || "-"}</td>
+                    <td style={S.td}>{p.gender || '-'}</td>
+                    <td style={S.td}>{p.className || '-'}</td>
                   </tr>
                 ))}
               </tbody>
