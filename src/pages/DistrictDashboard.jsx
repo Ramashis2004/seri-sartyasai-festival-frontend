@@ -222,7 +222,7 @@ export default function DistrictDashboard() {
             justifyContent: { xs: 'center', sm: 'flex-end' },
             gap: '10px',
           }}>
-            {onClear && (
+            {/* {onClear && (
               <Button 
                 onClick={onClear}
                 style={{
@@ -234,7 +234,7 @@ export default function DistrictDashboard() {
               >
                 Clear
               </Button>
-            )}
+            )} */}
             <Button 
               onClick={onClose}
               style={{
@@ -441,108 +441,91 @@ export default function DistrictDashboard() {
     }
 
     const list = gatherPreviewList();
-    setParticipants(list);
     setShowPreview(true);
   };
 
+  // Build a flat list with ids and current form values for all events
   const gatherFullParticipants = () => {
-  const list = [];
-
-  (events || []).forEach((ev) => {
-    const v = participantsGrid[ev._id] || {};
-
-    list.push({
-      _id: v._id,
-      eventId: ev._id,
-      eventTitle: ev.title,
-      name: v.name || "",
-      gender: v.gender || "",
-      className: v.className || "",
+    const list = [];
+    (events || []).forEach((ev) => {
+      const v = participantsGrid[ev._id] || {};
+      list.push({
+        _id: v._id,
+        eventId: ev._id,
+        name: v.name || "",
+        gender: v.gender || "",
+        className: v.className || "",
+      });
     });
-  });
+    return list;
+  };
 
-  return list;
-};
+  const confirmSaveParticipants = async () => {
+    if (savingParticipants) return; // ⛔ Prevent double click
 
-const confirmSaveParticipants = async () => {
-  if (savingParticipants) return; // ⛔ Prevent double click
+    const fullList = gatherFullParticipants();
 
-  const fullList = gatherFullParticipants();
+    const result = await Swal.fire({
+      title: "Confirm Save",
+      text: `Do you want to save ${fullList.length} participant(s)?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, save",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#2563eb",
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      preConfirm: async () => {
+        try {
+          setSavingParticipants(true);
+          const apiCalls = fullList.map(async (p) => {
+            if (isEventFrozen(p.eventId)) return;
 
-  const result = await Swal.fire({
-    title: "Confirm Save",
-    text: `Do you want to save ${fullList.length} participant(s)?`,
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "Yes, save",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#2563eb",
-  });
+            const hasAll = p.name && p.gender && p.className;
 
-  if (!result.isConfirmed) return;
-
-  try {
-    setSavingParticipants(true);
-
-    const apiCalls = fullList.map(async (p) => {
-      if (isEventFrozen(p.eventId)) return;
-
-      const hasAll = p.name && p.gender && p.className;
-
-      // DELETE
-      if (p._id && !hasAll) {
-        return districtUserApi.duDeleteParticipant(p._id);
-      }
-
-      // UPDATE
-      if (p._id && hasAll) {
-        return districtUserApi.duUpdateParticipant(p._id, {
-          name: p.name,
-          gender: p.gender,
-          className: p.className,
-        });
-      }
-
-      // CREATE
-      if (!p._id && hasAll) {
-        return districtUserApi.duCreateParticipant({
-          eventId: p.eventId,
-          name: p.name,
-          gender: p.gender,
-          className: p.className,
-        });
-      }
-
-      return;
+            if (p._id && !hasAll) {
+              return districtUserApi.duDeleteParticipant(p._id);
+            }
+            if (p._id && hasAll) {
+              return districtUserApi.duUpdateParticipant(p._id, {
+                name: p.name,
+                gender: p.gender,
+                className: p.className,
+              });
+            }
+            if (!p._id && hasAll) {
+              return districtUserApi.duCreateParticipant({
+                eventId: p.eventId,
+                name: p.name,
+                gender: p.gender,
+                className: p.className,
+              });
+            }
+            return;
+          });
+          await Promise.all(apiCalls);
+        } catch (e) {
+          Swal.showValidationMessage("Failed to save. Please try again.");
+          throw e;
+        } finally {
+          setSavingParticipants(false);
+        }
+      },
     });
 
-    // Run all calls in parallel 🚀
-    await Promise.all(apiCalls);
+    if (!result.isConfirmed) return;
 
-    // Clear local saved edits
-    try { localStorage.removeItem(LS_PARTICIPANTS_KEY); } catch (_) {}
+    try {
+      try { localStorage.removeItem(LS_PARTICIPANTS_KEY); } catch (_) {}
+      await refreshParticipants();
+      setShowPreview(false);
+      setParticipantsDirty(false);
+      await Swal.fire({ icon: "success", title: "Saved!", text: "Participants saved successfully." });
+    } catch (err) {
+      console.error("Post-save refresh error:", err);
+    }
+  };
 
-    await refreshParticipants();
-
-    // 🔥 Close preview BEFORE showing Swal success
-    setShowPreview(false);
-    setParticipantsDirty(false);
-
-    await Swal.fire({
-      icon: "success",
-      title: "Saved!",
-      text: "Participants saved successfully.",
-    });
-
-  } catch (err) {
-    console.error("Save error:", err);
-  } finally {
-    setSavingParticipants(false);
-  }
-};
-
-
-  // Teachers (Accompanying Guru)
   const [teachers, setTeachers] = useState([]);
   const [teachersGrid, setTeachersGrid] = useState([{ member: "secretary_manager", name: "", mobile: "", gender: "" }]);
   const [teachersDirty, setTeachersDirty] = useState(false);
@@ -999,7 +982,7 @@ const confirmSaveParticipants = async () => {
             <table style={S.table}>
               <thead>
                 <tr>
-                  <th style={S.th}>#</th>
+                  <th style={S.th}>Sl No</th>
                   <th style={S.th}>Designation</th>
                   <th style={S.th}>Name</th>
                   <th style={S.th}>Mobile</th>
