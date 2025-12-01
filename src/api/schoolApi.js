@@ -17,4 +17,4 @@ export const deleteParticipant = (id) => API.delete(`/api/school/participants/${
 export const listTeachers = () => API.get("/api/school/teachers").then(r => r.data);
 export const createTeacher = (payload) => API.post("/api/school/teachers", payload).then(r => r.data);
 export const updateTeacher = (id, payload) => API.patch(`/api/school/teachers/${id}`, payload).then(r => r.data);
-export const deleteTeacher = (id) => API.delete(`/api/school/teachers/${id}`).then(r => r.data);
+export const deleteTeacher = (id) => API.delete(`/api/school/teachers/delete/${id}`).then(r => r.data);
