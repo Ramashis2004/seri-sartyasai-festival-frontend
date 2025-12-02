@@ -1491,7 +1491,18 @@ export default function SchoolDashboard() {
                   );
                 }
                 return payloads.map((p, idx) => {
-                  const label = p.designation || (p.member === "secretary_manager" ? "Secretary/Manager" : p.member === "mc_member" ? "MC Member" : p.member);
+                 const label =
+                  p.designation ||
+                  (p.member === "secretary_manager"
+                    ? "Secretary/Manager"
+                    : p.member === "mc_member"
+                    ? "MC Member"
+                    : p.member === "teacher"
+                    ? "Teacher"
+                    : p.member === "principal"
+                    ? "Principal"
+                    : p.member);
+
                   return (
                     <tr key={idx}>
                       <td style={S.td}>{idx + 1}</td>

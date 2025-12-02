@@ -609,6 +609,15 @@ export default function ITAdminTeachers() {
       margin-bottom: 5px;
       font-weight: 600;
     }
+      div.swal2-container .swal2-input,
+div.swal2-container .swal2-file,
+div.swal2-container .swal2-textarea,
+div.swal2-container .swal2-select,
+div.swal2-container .swal2-radio,
+div.swal2-container .swal2-checkbox {
+  margin: 0 !important;
+}
+
     .swal2-select {
       width: 100%;
       padding: 8px;
@@ -684,28 +693,28 @@ export default function ITAdminTeachers() {
             <table className="styled-table">
               <thead>
                 <tr>
-                  <th>Sl. No</th>
-                  <th>Name</th>
-                  <th>Phone</th>
-                  <th>Gender</th>
-                  <th>Role</th>
-                  <th>School</th>
-                  <th>District</th>
-                  <th>Present</th>
-                  <th>Frozen</th>
-                  <th>Actions</th>
+                  <th style={{width:"5px"}}>Sl. No</th>
+                  <th style={{width:"10px"}}>District</th>
+                  <th style={{width:"20px"}}>School</th>
+                  <th style={{width:"10px"}}>Name</th>
+                  <th style={{width:"10px"}}>Phone</th>
+                  <th style={{width:"10px"}}>Role</th>
+                  <th style={{width:"10px"}}>Gender</th>
+                  <th style={{width:"10px"}}>Present</th>
+                  <th style={{width:"10px"}}>Frozen</th>
+                  <th style={{width:"5px"}}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length ? filtered.map((r, i) => (
                   <tr key={r._id} id={`teacher-row-${r._id}`} style={{ backgroundColor: r.present ? '#b5d6a7' : 'transparent' }}>
                     <td>{i + 1}</td>
+                    <td>{r.districtName || '-'}</td>
+                    <td>{r.schoolName || "-"}</td>
                     <td>{r.name}</td>
                     <td>{r.phone || "-"}</td>
-                    <td>{r.gender==="boy"?"Gents":"Ladies" || "-"}</td>
                     <td>{getRoleText(r) || "-"}</td>
-                    <td>{r.schoolName || "-"}</td>
-                    <td>{r.districtName || '-'}</td>
+                    <td>{r.gender==="boy"?"Gents":"Ladies" || "-"}</td>
                     <td>
                       <input type="checkbox" checked={!!r.present} disabled={!!r.frozen} onChange={() => onTogglePresent(r)} />
                     </td>
@@ -714,7 +723,26 @@ export default function ITAdminTeachers() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                        <button className="btn small" onClick={() => onEdit(r)} disabled={!!r.frozen}>Edit</button>
+                    <button
+                      onClick={() => onEdit(r)}
+                      disabled={!!r.frozen}
+                      style={{
+                        fontSize: "13px",
+                        marginLeft: "6px",
+                        background: "white",
+                        color: "#0077b6",
+                        textDecoration: "none",
+                        fontWeight: "bold",
+                        borderRadius: "6px",
+                        transition: "0.3s",
+                        padding: "4px 10px",
+                        border: "1px solid #0077b6",
+                        cursor: r.frozen ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      Edit
+                    </button>
+
                       </div>
                     </td>
                   </tr>

@@ -140,8 +140,8 @@ export default function ITAdminParticipants() {
       <input id="swal-name" class="swal2-input" placeholder="Name" value="${row.name || ""}">
       <input id="swal-class" class="swal2-input" placeholder="Class" value="${row.className || ""}">
 
-      <div style="text-align:left; margin-top:10px;">
-        <label><strong>Gender:</strong></label><br>
+      <div style="text-align:left; margin-top:10px;margin-left:82px">
+        <label><strong>Gender:</strong></label>
 
         <label style="margin-right:15px;">
           <input type="radio" name="swal-gender" value="boy" 
@@ -229,13 +229,13 @@ export default function ITAdminParticipants() {
   const toCSV = () => {
     const header = [
       "Sl.No",
+      "District",
+      "School",
       "Name",
-      "Class",
       "Gender",
+      "Class",
       "Event",
       "Group",
-      "School",
-      "District",
       "Present",
       "Frozen",
     ];
@@ -535,13 +535,13 @@ export default function ITAdminParticipants() {
               <thead>
                 <tr>
                   <th>Sl.No</th>
+                  <th>District</th>
+                  <th>School</th>
                   <th>Name</th>
-                  <th>Class</th>
                   <th>Gender</th>
+                  <th>Class</th>
                   <th>Event</th>
                   <th>Group</th>
-                  <th>School</th>
-                  <th>District</th>
                   <th>Present</th>
                   <th>Frozen</th>
                   <th>Actions</th>
@@ -551,13 +551,13 @@ export default function ITAdminParticipants() {
                 {filtered.length ? filtered.map((r, i) => (
                   <tr key={r._id} id={`row-${r._id}`} style={{ backgroundColor: r.present ? '#b5d6a7' : 'transparent' }}>
                     <td>{i + 1}</td>
-                    <td>{r.name}</td>
-                    <td>{r.className || "-"}</td>
-                    <td>{r.gender || "-"}</td>
-                    <td>{r.eventTitle || '-'}</td>
-                    <td>{r.source === "school" ? (r.group || "-") : "-"}</td>
-                    <td>{r.schoolName || "-"}</td>
                     <td>{r.districtName || '-'}</td>
+                    <td>{r.schoolName || "-"}</td>
+                    <td>{r.name}</td>
+                    <td>{r.gender==="boy"?"Boy":"Girl" || "-"}</td>
+                    <td>{r.className || "-"}</td>
+                    <td>{r.eventTitle || '-'}</td>
+                    <td>{r.source === "school" ? (r.group==="senior"?"Senior":"Junior" || "-") : "-"}</td>
                     <td>
                       <input type="checkbox" checked={!!r.present} disabled={!!r.frozen} onChange={() => onTogglePresent(r)} />
                     </td>
@@ -566,7 +566,24 @@ export default function ITAdminParticipants() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                        <button className="btn small" onClick={() => onEdit(r)} disabled={!!r.frozen}>Edit</button>
+                        <button
+  onClick={() => onEdit(r)}
+  disabled={!!r.frozen}
+  style={{
+    fontSize: "13px",
+    marginLeft: "6px",
+    background: "white",
+    color: "#0077b6",
+    textDecoration: "none",
+    fontWeight: "bold",
+    borderRadius: "6px",
+    transition: "0.3s",
+    cursor: "pointer",
+  }}
+>
+  Edit
+</button>
+
                       </div>
                     </td>
                   </tr>

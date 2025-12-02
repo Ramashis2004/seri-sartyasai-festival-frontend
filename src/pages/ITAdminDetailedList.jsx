@@ -10,6 +10,18 @@ export default function ITAdminDetailedList() {
     { key: "teachers", label: "Accompanying Teacher & Guru" },
   ];
 
+   const memberLabels = {
+  dist_president: "Dist President",
+  dist_edu_coordinator_gents: "Edu-Coord (Gents)",
+  dist_edu_coordinator_ladies: "Edu-Coord (Ladies)",
+  dist_monitoring_committee: "Monitoring Committee",
+  guru: "Guru",
+  parents: "Parents",
+  mc_member:"MC Member",
+  teacher:"Teacher",
+  principal:"Principal"
+};
+
   const spInit = useMemo(() => new URLSearchParams(window.location.search), []);
   const [districtId] = useState(spInit.get("districtId") || "");
   const [eventId] = useState(spInit.get("eventId") || "");
@@ -169,7 +181,7 @@ export default function ITAdminDetailedList() {
         String(i + 1),
         r.name || "",
         r.className || "",
-        r.gender || "",
+        r.gender==="boy"?"Boy":"Girl" || "",
         r.eventTitle || "",
         r.source === "school" ? (r.group || "-") : "-",
         r.schoolName || "",
@@ -198,10 +210,10 @@ export default function ITAdminDetailedList() {
       ];
       const teacherBody = teachers.map((t, i) => [
         String(i + 1),
-        t.member || t.role || t.designation || "",
+        memberLabels[t.member] || memberLabels[t.role] || memberLabels[t.designation] || t.member||'',
         t.name || "",
         t.mobile || "",
-        t.gender || "",
+        t.gender==="boy"?"Gents":"Ladies" || "",
         t.schoolName || "",
         t.districtName || "",
       ]);
@@ -271,10 +283,14 @@ export default function ITAdminDetailedList() {
                     <div>No roles</div>
                   ) : (
                     <ul style={{ margin: 0, paddingLeft: 18 }}>
-                      {Object.entries(summary.byRole).map(([role, count]) => (
-                        <li key={role}>{role}: {count}</li>
-                      ))}
-                    </ul>
+                    {Object.entries(summary.byRole).map(([role, count]) => {
+                      const label =
+                        memberLabels[role] ||
+                        role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+                      return <li key={role}>{label}: {count}</li>;
+                    })}
+                  </ul>
                   )}
                 </div>
               </div>
@@ -289,13 +305,13 @@ export default function ITAdminDetailedList() {
                   <thead>
                     <tr>
                       <th>Sl.No</th>
+                      <th>District</th>
+                      <th>School</th>
                       <th>Name</th>
-                      <th>Class</th>
                       <th>Gender</th>
+                      <th>Class</th>
                       <th>Event</th>
                       <th>Group</th>
-                      <th>School</th>
-                      <th>District</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -303,13 +319,13 @@ export default function ITAdminDetailedList() {
                       participants.map((r, i) => (
                         <tr key={r._id || i}>
                           <td>{i + 1}</td>
-                          <td>{r.name}</td>
-                          <td>{r.className || "-"}</td>
-                          <td>{r.gender || "-"}</td>
-                          <td>{r.eventTitle || "-"}</td>
-                          <td>{r.source === "school" ? (r.group || "-") : "-"}</td>
-                          <td>{r.schoolName || "-"}</td>
                           <td>{r.districtName || "-"}</td>
+                          <td>{r.schoolName || "-"}</td>
+                          <td>{r.name}</td>
+                          <td>{r.gender==="boy"?"Boy":"Girl" || "-"}</td>
+                          <td>{r.className || "-"}</td>
+                          <td>{r.eventTitle || "-"}</td>
+                          <td>{r.source === "school" ? (r.group==="senior"?"Senior":"Junior" || "-") : "-"}</td>
                         </tr>
                       ))
                     ) : (
@@ -331,12 +347,12 @@ export default function ITAdminDetailedList() {
                   <thead>
                     <tr>
                       <th>Sl.No</th>
-                      <th>Role</th>
+                      <th>District</th>
+                      <th>School</th>
                       <th>Name</th>
                       <th>Mobile</th>
+                      <th>Role</th>
                       <th>Gender</th>
-                      <th>School</th>
-                      <th>District</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -344,12 +360,12 @@ export default function ITAdminDetailedList() {
                       teachers.map((t, i) => (
                         <tr key={t._id || i}>
                           <td>{i + 1}</td>
-                          <td>{t.member || t.role || t.designation || "-"}</td>
+                          <td>{t.districtName || "-"}</td>
+                          <td>{t.schoolName || "-"}</td>
                           <td>{t.name || "-"}</td>
                           <td>{t.mobile || "-"}</td>
-                          <td>{t.gender || "-"}</td>
-                          <td>{t.schoolName || "-"}</td>
-                          <td>{t.districtName || "-"}</td>
+                          <td>{memberLabels[t.member] || memberLabels[t.role] || memberLabels[t.designation] || t.member}</td>
+                          <td>{t.gender==="boy"?"Gents":"Ladies" || "-"}</td>
                         </tr>
                       ))
                     ) : (

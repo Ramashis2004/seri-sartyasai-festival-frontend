@@ -506,7 +506,6 @@ export default function DistrictDashboard() {
 
   const presetMembers = [
     "secretary_manager",
-    "mc_member",
     "principal",
     "teacher",
     "guru",
@@ -516,6 +515,15 @@ export default function DistrictDashboard() {
     "dist_edu_coordinator_ladies",
     "dist_monitoring_committee",
   ];
+
+  const memberLabels = {
+  dist_president: "Dist President",
+  dist_edu_coordinator_gents: "Edu-Coord (Gents)",
+  dist_edu_coordinator_ladies: "Edu-Coord (Ladies)",
+  dist_monitoring_committee: "Monitoring Committee",
+  guru: "Guru",
+  parents: "Parents"
+};
 
   const refreshTeachers = async () => {
   try {
@@ -949,7 +957,7 @@ export default function DistrictDashboard() {
                     <td style={S.td}>{idx + 1}</td>
                     <td style={S.td}>{p.eventTitle || (events.find((e) => e._id === p.eventId)?.title) || '-' }{isEventFrozen(p.eventId) && (<span style={{ marginLeft: 8, color: '#b91c1c', fontWeight: 700 }}>(Frozen)</span>)}</td>
                     <td style={S.td}>{p.name}</td>
-                    <td style={S.td}>{p.gender || '-'}</td>
+                    <td style={S.td}>{p.gender==="boy"?'Boy':"Girl" || '-'}</td>
                     <td style={S.td}>{p.className || '-'}</td>
                   </tr>
                 ))}
@@ -975,7 +983,9 @@ export default function DistrictDashboard() {
                 {gatherTeachersPayload().map((t, idx) => (
                   <tr key={idx}>
                     <td style={S.td}>{idx + 1}</td>
-                    <td style={S.td}>{t.member}</td>
+                    <td style={S.td}>
+                      {memberLabels[t.member] || t.member}
+                    </td>
                     <td style={S.td}>{t.name}</td>
                     <td style={S.td}>{t.mobile}</td>
                     <td style={S.td}>{t.gender==="boy"?"Gents":"Ladies"}</td>

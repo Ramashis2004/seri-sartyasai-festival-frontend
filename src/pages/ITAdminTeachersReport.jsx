@@ -10,6 +10,18 @@ export default function ITAdminTeachersReport() {
     { key: "teachers", label: "Accompanying Teacher & Guru" },
   ];
 
+   const memberLabels = {
+  dist_president: "Dist President",
+  dist_edu_coordinator_gents: "Edu-Coord (Gents)",
+  dist_edu_coordinator_ladies: "Edu-Coord (Ladies)",
+  dist_monitoring_committee: "Monitoring Committee",
+  guru: "Guru",
+  parents: "Parents",
+  mc_member:"MC Member",
+  teacher:"Teacher",
+  principal:"Principal"
+};
+
   const spInit = useMemo(() => new URLSearchParams(window.location.search), []);
   const [districtId] = useState(spInit.get("districtId") || "");
   const [eventId] = useState(spInit.get("eventId") || "");
@@ -128,7 +140,9 @@ export default function ITAdminTeachersReport() {
               <thead>
                 <tr>
                   <th>District</th>
-                  {roles.map((r) => (<th key={r}>{r}</th>))}
+                  {roles.map((r) => (
+                    <th key={r}>{memberLabels[r] || r}</th>
+                  ))}
                   <th>Grand Total</th>
                 </tr>
               </thead>

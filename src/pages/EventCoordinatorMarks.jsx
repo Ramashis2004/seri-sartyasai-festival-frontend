@@ -52,7 +52,7 @@ export default function EventCoordinatorMarks() {
           if (!ignoreSchoolFilter && activeTab === "school" && selectedSchool && String(p.schoolName || "") !== String(selectedSchool)) return;
           const key = `${String(p.name||'').trim().toLowerCase()}|${String(p.schoolName||'').trim().toLowerCase()}|${String(p.districtName||'').trim().toLowerCase()}`;
           if (!matrix.has(key)) {
-            matrix.set(key, { name: p.name || "", district: p.districtName || p.district || "", school: p.schoolName || "", events: [] });
+            matrix.set(key, { name: p.name || "", district: p.districtName || p.district || "", school: p.schoolName || "",className:p.className,group:p.group, events: [] });
           }
           const m = p.marks != null ? String(p.marks) : "";
           matrix.get(key).events.push({ title: ev.title || "", position: evaluate(m) || "" });
@@ -66,10 +66,10 @@ export default function EventCoordinatorMarks() {
 
   const downloadCSVAll = async () => {
     const { rows, maxEvents } = await buildConsolidated(true);
-    const header = ["Name", "District", "School"]; 
+    const header = ["Name", "District", "School","Class","Group"]; 
     for (let i = 1; i <= maxEvents; i++) { header.push(`EVENT-${i}`, `POSITION of EVENT-${i}`); }
     const body = rows.map(r => {
-      const row = [r.name, r.district, r.school];
+      const row = [r.name, r.district, r.school,r.className,r.group];
       for (let i = 0; i < maxEvents; i++) {
         const cell = r.events[i];
         row.push(cell ? cell.title : "", cell ? cell.position : "");
@@ -200,12 +200,18 @@ export default function EventCoordinatorMarks() {
 
   const canSubmit = useMemo(() => Object.values(marks).some((v) => v !== ""), [marks]);
 
-  const visibleParticipants = useMemo(() => {
-    if (activeTab === "school" && selectedSchool) {
-      return (participants || []).filter(p => String(p.schoolName || "") === String(selectedSchool));
-    }
-    return participants || [];
-  }, [participants, activeTab, selectedSchool]);
+ const visibleParticipants = useMemo(() => {
+  const list = (participants || []).filter(p => p.present === true);
+
+  if (activeTab === "school" && selectedSchool) {
+    return list.filter(
+      p => String(p.schoolName || "") === String(selectedSchool)
+    );
+  }
+
+  return list;
+}, [participants, activeTab, selectedSchool]);
+
 
   // Build report rows from the visible participants
   const reportRows = useMemo(() => {
@@ -220,6 +226,7 @@ export default function EventCoordinatorMarks() {
         marks: m || "",
         school: p.schoolName || "",
         className: p.className || p.class || "",
+        group:p.group||''
       };
     });
   }, [visibleParticipants, marks, selectedEvent]);
@@ -231,9 +238,11 @@ export default function EventCoordinatorMarks() {
       "District",
       "School",
       "Event",
+      "Class",
+      "Group",
       "Position",
     ];
-    const body = reportRows.map(r => [r.slno, r.name, r.district, r.school, r.event, r.position]);
+    const body = reportRows.map(r => [r.slno, r.name, r.district, r.school, r.event,r.className,r.group, r.position]);
     const lines = [header, ...body].map(arr => arr.map(v => {
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -315,6 +324,7 @@ export default function EventCoordinatorMarks() {
     { key: "judge-sheet", label: "Judge Sheet", icon: <FaClipboardList /> },
   ];
 
+
   return (
     <DashboardLayout title="Event Coordinator" sidebarItems={sidebarItems} activeKey="marks" onSelectItem={(key) => {
       if (key === 'judge-sheet') window.location.assign('/event-coordinator/judge-sheet');
@@ -359,10 +369,18 @@ export default function EventCoordinatorMarks() {
           <table style={S.table}>
             <thead>
               <tr>
+                <th style={S.th}>Sl No</th>
                 <th style={S.th}>Event</th>
+                <th style={S.th}>District</th>
+                 {activeTab === "school" && (
+                    <th style={S.th}>School Name</th>
+                  )}
                 <th style={S.th}>Name</th>
+                <th style={S.th}>Gender</th>
                 <th style={S.th}>Class</th>
-                <th style={S.th}>Boy/Girl</th>
+                {activeTab === "school" && (
+                    <th style={S.th}>Group</th>
+                  )}
                 <th style={S.th}>Present/Absent</th>
                 <th style={S.th}>Marks</th>
                 <th style={S.th}>Evaluation</th>
@@ -376,15 +394,23 @@ export default function EventCoordinatorMarks() {
               ) : (visibleParticipants || []).length === 0 ? (
                 <tr><td style={{ ...S.td, textAlign: "center", color: "#64748b" }} colSpan={7}>No participants found</td></tr>
               ) : (
-                (visibleParticipants || []).map((p) => {
+                (visibleParticipants || []).map((p,i) => {
                   const m = marks[p._id] ?? "";
                   const e = evaluate(m);
                   return (
                     <tr key={p._id}>
+                      <td style={S.td}>{i+1}</td>
                       <td style={S.td}>{selectedEvent?.title || "-"}</td>
+                      <td style={S.td}>{p.districtName}</td>
+                       {activeTab === "school" && (
+                        <td style={S.th}>{p.schoolName}</td>
+                      )}
                       <td style={S.td}>{p.name || "-"}</td>
-                      <td style={S.td}>{p.className || p.class || "-"}</td>
                       <td style={S.td}>{genderText(p.gender)}</td>
+                      <td style={S.td}>{p.className || p.class || "-"}</td>
+                       {activeTab === "school" && (
+                        <td style={S.td} >{p.group==="junior"?"Junior":"Senior"}</td>
+                      )}
                       <td style={S.td}>{p.present ? "Present" : "Absent"}</td>
                       <td style={S.td}>
                         <input

@@ -293,7 +293,9 @@ export default function EventCoordinatorJudgeSheet() {
                   ) : (participants || []).length === 0 ? (
                     <tr><td colSpan={7 + (evalFormat?.criteria||[]).length + 1} style={{ textAlign: 'center', color: '#64748b' }}>No participants available.</td></tr>
                   ) : (
-                    (participants || []).map((p, i) => (
+                    (participants || [])
+                    .filter(p => p.present === true)     // 🔥 Only present participants
+                    .map((p, i) => (
                       <tr key={p._id}>
                         <td>{i + 1}</td>
                         <td>{p.districtName || p.district || ''}</td>
@@ -307,7 +309,7 @@ export default function EventCoordinatorJudgeSheet() {
                         ))}
                         <td></td>
                       </tr>
-                    ))
+                  ))
                   )}
                 </tbody>
               </table>
