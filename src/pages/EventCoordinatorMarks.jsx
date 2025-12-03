@@ -436,8 +436,28 @@ export default function EventCoordinatorMarks() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button style={S.btn(false)} disabled={!selectedEventId || (visibleParticipants || []).length === 0} onClick={downloadCSV}>Generate CSV</button>
             <button style={S.btn(false)} disabled={!selectedEventId || (visibleParticipants || []).length === 0} onClick={downloadDOCX}>Generate DOCX</button>
-            <button style={S.btn(false)} onClick={downloadCSVAll}>All Events CSV</button>
-            <button style={S.btn(false)} onClick={downloadDOCXAll}>All Events DOCX</button>
+           <button
+  style={{ 
+    ...S.btn(false),
+    backgroundColor: "#f57716",
+    color: "#ffffff"
+  }}
+  onClick={downloadCSVAll}
+>
+  All Events CSV
+</button>
+
+<button
+  style={{ 
+    ...S.btn(false),
+    backgroundColor: "#f57716",
+    color: "#ffffff"
+  }}
+  onClick={downloadDOCXAll}
+>
+  All Events DOCX
+</button>
+
           </div>
           <button style={S.btn(true)} disabled={!canSubmit || submitting} onClick={handleSubmit}>Submit</button>
         </div>

@@ -209,7 +209,8 @@ export default function EventCoordinatorJudgeSheet() {
       const pageH = doc.internal.pageSize.getHeight();
       const signY = doc.lastAutoTable ? (doc.lastAutoTable.finalY + 40) : (startY + 40);
       doc.text('Signature of Judge - 1', 140, Math.min(signY, pageH - 40));
-      doc.text('Signature of Judge - 2', 440, Math.min(signY, pageH - 40));
+      doc.text('Signature of Judge - 2', 290, Math.min(signY, pageH - 40));
+      doc.text('Signature of Judge - 3', 440, Math.min(signY, pageH - 40));
       doc.text('Signature of Coordinators', 140, Math.min(signY + 40, pageH - 20));
       doc.text('Signature of IT-incharge after mark entry', 380, Math.min(signY + 40, pageH - 20));
 
@@ -316,8 +317,30 @@ export default function EventCoordinatorJudgeSheet() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 32 }}>
-              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, textAlign: 'center', color: '#64748b' }}>Signature of Judge - 1</div>
-              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, textAlign: 'center', color: '#64748b' }}>Signature of Judge - 2</div>
+             <div
+  style={{
+    display: "flex",
+    justifyContent: "space-around",
+    marginTop: 20,
+    color: "#64748b",
+  }}
+>
+  <div style={{ textAlign: "center" }}>
+    <div style={{ borderTop: "1px solid #e5e7eb", width: 150, margin: "0 auto" }}></div>
+    Signature of Judge - 1
+  </div>
+
+  <div style={{ textAlign: "center" }}>
+    <div style={{ borderTop: "1px solid #e5e7eb", width: 150, margin: "0 auto" }}></div>
+    Signature of Judge - 2
+  </div>
+
+  <div style={{ textAlign: "center" }}>
+    <div style={{ borderTop: "1px solid #e5e7eb", width: 150, margin: "0 auto" }}></div>
+    Signature of Judge - 3
+  </div>
+</div>
+
               <div style={{ gridColumn: '1 / span 2', borderTop: '1px solid #e5e7eb', paddingTop: 12, textAlign: 'center', color: '#64748b' }}>Signature of Coordinators</div>
               <div style={{ gridColumn: '1 / span 2', borderTop: '1px solid #e5e7eb', paddingTop: 12, textAlign: 'center', color: '#64748b' }}>Signature of IT-incharge after mark entry</div>
             </div>

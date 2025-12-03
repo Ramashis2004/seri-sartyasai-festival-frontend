@@ -1,16 +1,19 @@
 import React from "react";
 
-export default function Sidebar({ items = [], activeKey, onSelectItem, title = "DEMS", collapsed = false }) {
+export default function Sidebar({ items = [], activeKey, onSelectItem, title = "Sri Sathya Sai Festivals", collapsed = false }) {
   return (
     <aside
-      style={{
-        width: collapsed ? 0 : 260,
-        transition: "width 200ms ease",
-        background: "#0f172a",
-        color: "#fff",
-        padding: collapsed ? 0 : 16,
-        overflow: "hidden",
-      }}
+    style={{
+  width: collapsed ? 0 : 200,
+  minWidth: collapsed ? 0 : 200,
+  maxWidth: collapsed ? 0 : 200,
+  transition: "width 200ms ease",
+  background: "#0f172a",
+  color: "#fff",
+  padding: collapsed ? 0 : 16,
+  overflow: "hidden",
+}}
+
     >
       <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}> {title}</div>
       <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>MAIN MENU</div>

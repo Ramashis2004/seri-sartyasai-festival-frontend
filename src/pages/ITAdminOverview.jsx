@@ -193,8 +193,8 @@ export default function ITAdminOverview() {
                 <div className="stat-value red">{metrics?.participants?.total || 0}</div>
                 {/* <div style={{ color: '#64748b', textAlign: 'center' }}>Total students currently marked present</div> */}
                 <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill" onClick={() => goToParticipants({ present: true, gender: 'boy' })}>Boys - {metrics?.participants?.boys || 0}</button>
-                  <button className="btn pill" onClick={() => goToParticipants({ present: true, gender: 'girl' })}>Girls - {metrics?.participants?.girls || 0}</button>
+                  <button className="btn pill" >Boys - {metrics?.participants?.boys || 0}</button>
+                  <button className="btn pill" >Girls - {metrics?.participants?.girls || 0}</button>
                 </div>
               </div>
 
@@ -218,8 +218,8 @@ export default function ITAdminOverview() {
                 <div className="stat-value red">{metrics?.participants?.schoolCount || 0}</div>
                 
                 <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill" onClick={() => goToParticipants({ present: true, scope: 'school', gender: 'boy' })}>Boys - {metrics?.participants?.schoolBoys || 0}</button>
-                  <button className="btn pill" onClick={() => goToParticipants({ present: true, scope: 'school', gender: 'girl' })}>Girls - {metrics?.participants?.schoolGirls || 0}</button>
+                  <button className="btn pill">Boys - {metrics?.participants?.schoolBoys || 0}</button>
+                  <button className="btn pill">Girls - {metrics?.participants?.schoolGirls || 0}</button>
                 </div>
 
                 {/* <div style={{ color: '#64748b', textAlign: 'center' }}>Present students from School submissions</div> */}
@@ -243,8 +243,8 @@ export default function ITAdminOverview() {
                 </div>
                 <div className="stat-value red">{metrics?.participants?.districtCount || 0}</div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill" onClick={() => goToParticipants({ present: true, scope: 'district', gender: 'boy' })}>Boys - {metrics?.participants?.districtBoys || 0}</button>
-                  <button className="btn pill" onClick={() => goToParticipants({ present: true, scope: 'district', gender: 'girl' })}>Girls - {metrics?.participants?.districtGirls || 0}</button>
+                  <button className="btn pill" >Boys - {metrics?.participants?.districtBoys || 0}</button>
+                  <button className="btn pill" >Girls - {metrics?.participants?.districtGirls || 0}</button>
                 </div>
                 {/* <div style={{ color: '#64748b', textAlign: 'center' }}>Present students from District submissions</div> */}
               </div>
@@ -309,8 +309,8 @@ export default function ITAdminOverview() {
                 </div>
                 <div className="stat-value red">{teachers?.reported?.total || 0}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill" onClick={() => window.location.assign(`/it-admin/teachers?frozen=true&gender=male`)}>Gents - {teachers?.reported?.male || 0}</button>
-                  <button className="btn pill" onClick={() => window.location.assign(`/it-admin/teachers?frozen=true&gender=female`)}>Ladies - {teachers?.reported?.female || 0}</button>
+                  <button className="btn pill" >Gents - {teachers?.reported?.male || 0}</button>
+                  <button className="btn pill" >Ladies - {teachers?.reported?.female || 0}</button>
                 </div>
               </div>
 
@@ -333,14 +333,7 @@ export default function ITAdminOverview() {
                 </div>
                 <div className="stat-value red">{teachers?.reported?.schoolTeacher || 0}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill" onClick={() => {
-                    const sp = new URLSearchParams();
-                    if (districtId) sp.set('districtId', districtId);
-                    if (eventId) sp.set('eventId', eventId);
-                    sp.set('scope','school');
-                    sp.set('frozen','false');
-                    window.location.assign(`/it-admin/teachers?${sp.toString()}`);
-                  }}>Yet to Report - {teachers?.yetToReport?.schoolTeacher || 0}</button>
+                  <button className="btn pill">Yet to Report - {teachers?.yetToReport?.schoolTeacher || 0}</button>
                 </div>
               </div>
 
@@ -362,14 +355,7 @@ export default function ITAdminOverview() {
                 </div>
                 <div className="stat-value red">{teachers?.reported?.districtGuru || 0}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill" onClick={() => {
-                    const sp = new URLSearchParams();
-                    if (districtId) sp.set('districtId', districtId);
-                    if (eventId) sp.set('eventId', eventId);
-                    sp.set('scope','district');
-                    sp.set('frozen','false');
-                    window.location.assign(`/it-admin/teachers?${sp.toString()}`);
-                  }}>Yet to Report - {teachers?.yetToReport?.districtGuru || 0}</button>
+                  <button className="btn pill" >Yet to Report - {teachers?.yetToReport?.districtGuru || 0}</button>
                 </div>
               </div>
 
@@ -413,13 +399,13 @@ export default function ITAdminOverview() {
               <div className="card-header">
                 <h3 style={{ margin: 0 }}>Yet to Report</h3>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('present','false');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -482,7 +468,7 @@ export default function ITAdminOverview() {
               <div className="card-header">
                 <h3 style={{ margin: 0 }}>Students Yet to Report</h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
@@ -497,7 +483,7 @@ export default function ITAdminOverview() {
                     sp.set('present','false');
                     sp.set('scope','district');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View District List</button>
+                  }}>View District List</button> */}
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>

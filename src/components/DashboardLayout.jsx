@@ -40,7 +40,7 @@ export default function DashboardLayout({ title = "Dashboard", sidebarItems = []
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f6f8fa" }}>
-      <Sidebar items={items} activeKey={activeKey} onSelectItem={onSelectItem} title="DEMS" collapsed={!sidebarOpen} />
+      <Sidebar items={items} activeKey={activeKey} onSelectItem={onSelectItem} title="Sri Sathya Sai Festivals" collapsed={!sidebarOpen} />
 
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Navbar

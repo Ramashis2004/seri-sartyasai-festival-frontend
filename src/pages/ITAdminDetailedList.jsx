@@ -90,25 +90,25 @@ export default function ITAdminDetailedList() {
   const toCSVParticipants = () => {
     const header = [
       "Sl.No",
+      "District",
+      "School",
       "Name",
       "Class",
       "Gender",
       "Event",
-      "Group",
-      "School",
-      "District",
+      "Group",     
       "Present",
       "Frozen",
     ];
     const body = participants.map((r, i) => [
       String(i + 1),
+       r.districtName || "",
+       r.schoolName || "", 
       r.name || "",
       r.className || "",
       r.gender || "",
       r.eventTitle || "",
-      r.source === "school" ? (r.group || "-") : "-",
-      r.schoolName || "",
-      r.districtName || "",
+      r.source === "school" ? (r.group || "-") : "-",      
       r.present ? "Yes" : "No",
       r.frozen ? "Yes" : "No",
     ]);
@@ -130,15 +130,15 @@ export default function ITAdminDetailedList() {
   };
 
   const toCSVTeachers = () => {
-    const header = ["Sl.No", "Role", "Name", "Mobile", "Gender", "School", "District", "Frozen"];
+    const header = ["Sl.No","District","School", "Role", "Name", "Mobile", "Gender",  "Frozen"];
     const body = teachers.map((t, i) => [
       String(i + 1),
+      t.districtName || "",
+      t.schoolName || "",
       t.member || t.role || t.designation || "",
       t.name || "",
       t.mobile || "",
       t.gender || "",
-      t.schoolName || "",
-      t.districtName || "",
       t.frozen ? "Yes" : "No",
     ]);
     const lines = [header, ...body].map((row) =>
@@ -169,23 +169,27 @@ export default function ITAdminDetailedList() {
 
       const partHeaders = [
         "Sl.No",
+        "District",
+        "School",
         "Name",
         "Class",
         "Gender",
         "Event",
         "Group",
-        "School",
-        "District",
+        
+       
       ];
       const partBody = participants.map((r, i) => [
         String(i + 1),
+        r.districtName || "",
+        r.schoolName || "",
         r.name || "",
         r.className || "",
         r.gender==="boy"?"Boy":"Girl" || "",
         r.eventTitle || "",
         r.source === "school" ? (r.group || "-") : "-",
-        r.schoolName || "",
-        r.districtName || "",
+        
+       
       ]);
 
       autoTable(doc, {
@@ -201,21 +205,25 @@ export default function ITAdminDetailedList() {
 
       const teacherHeaders = [
         "Sl.No",
+        "District",
+        "School",
         "Role",
         "Name",
         "Mobile",
         "Gender",
-        "School",
-        "District",
+        
+       
       ];
       const teacherBody = teachers.map((t, i) => [
         String(i + 1),
+         t.districtName || "",
+        t.schoolName || "",
         memberLabels[t.member] || memberLabels[t.role] || memberLabels[t.designation] || t.member||'',
         t.name || "",
         t.mobile || "",
         t.gender==="boy"?"Gents":"Ladies" || "",
-        t.schoolName || "",
-        t.districtName || "",
+       
+       
       ]);
 
       autoTable(doc, {
