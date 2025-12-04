@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function LandingPage() {
-  const images = ["/images/banner 1.jpg", "/images/banner 2.png", "/images/banner 3.jpg"];
+  const images = ["/images/banner 1.jpg", "/images/banner 2.png", "/images/banner 3.jpg","/images/banner 4.jpg", "/images/banner 5.jpg", "/images/banner 6.jpg", "/images/banner 7.jpg"];
   const [index, setIndex] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [annLoad, setAnnLoad] = useState(false);
