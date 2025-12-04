@@ -874,7 +874,7 @@ export default function DistrictDashboard() {
         </div>
         <div style={{ display: "flex", flexDirection: { xs: 'column-reverse', sm: 'row' }, justifyContent: "space-between", alignItems: { xs: 'stretch', sm: 'center' }, marginTop: 16, gap: 12 }}>
           <div>
-            <Button onClick={addTeacherRow} style={{ backgroundColor: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0', '&:hover': { backgroundColor: '#dcfce7' }, width: { xs: '100%', sm: 'auto' } }}>+ Add New Guru</Button>
+            <Button onClick={addTeacherRow} style={{ backgroundColor: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0', '&:hover': { backgroundColor: '#dcfce7' }, width: { xs: '100%', sm: 'auto' } }}>+ Add New </Button>
           </div>
           <div style={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 10 }}>
             <Button onClick={() => { setTeachersGrid([{ member: "secretary_manager", name: "", mobile: "", gender: "" }]); setTFormKey(prev => prev + 1); try { localStorage.removeItem(LS_TEACHERS_KEY); } catch(_) {} }} style={{ borderColor: '#e2e8f0', '&:hover': { backgroundColor: '#f8fafc' } }}>Reset All</Button>
