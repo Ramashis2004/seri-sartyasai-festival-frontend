@@ -303,9 +303,18 @@ export default function ITAdminTeachers() {
     if (row.frozen) return;
     try {
       setAnchorId(String(row._id));
-      await itUpdateTeacher(row._id, { source: row.source, updates: { present: !row.present } });
-      await load();
-    } catch {}
+      const idStr = String(row._id);
+      const nextVal = !row.present;
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, present: nextVal } : it
+      )));
+      await itUpdateTeacher(row._id, { source: row.source, updates: { present: nextVal } });
+    } catch {
+      const idStr = String(row._id);
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, present: row.present } : it
+      )));
+    }
   };
 
   const onEdit = async (row) => {
@@ -516,9 +525,18 @@ export default function ITAdminTeachers() {
   const onToggleFreezeRow = async (row) => {
     try {
       setAnchorId(String(row._id));
-      await itUpdateTeacher(row._id, { source: row.source, updates: { frozen: !row.frozen } });
-      await load();
-    } catch {}
+      const idStr = String(row._id);
+      const nextVal = !row.frozen;
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, frozen: nextVal } : it
+      )));
+      await itUpdateTeacher(row._id, { source: row.source, updates: { frozen: nextVal } });
+    } catch {
+      const idStr = String(row._id);
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, frozen: row.frozen } : it
+      )));
+    }
   };
 
   const toCSV = () => {
