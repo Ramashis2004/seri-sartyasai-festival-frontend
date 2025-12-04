@@ -127,9 +127,20 @@ export default function ITAdminParticipants() {
     if (row.frozen) return;
     try {
       setAnchorId(String(row._id));
-      await itUpdateParticipant(row._id, { source: row.source, updates: { present: !row.present } });
-      await load();
-    } catch {}
+      const idStr = String(row._id);
+      const nextVal = !row.present;
+      // optimistic update
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, present: nextVal } : it
+      )));
+      await itUpdateParticipant(row._id, { source: row.source, updates: { present: nextVal } });
+    } catch {
+      // revert on failure
+      const idStr = String(row._id);
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, present: row.present } : it
+      )));
+    }
   };
 
   const onEdit = async (row) => {
@@ -207,9 +218,20 @@ export default function ITAdminParticipants() {
   const onToggleFreezeRow = async (row) => {
     try {
       setAnchorId(String(row._id));
-      await itUpdateParticipant(row._id, { source: row.source, updates: { frozen: !row.frozen } });
-      await load();
-    } catch {}
+      const idStr = String(row._id);
+      const nextVal = !row.frozen;
+      // optimistic update
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, frozen: nextVal } : it
+      )));
+      await itUpdateParticipant(row._id, { source: row.source, updates: { frozen: nextVal } });
+    } catch {
+      // revert on failure
+      const idStr = String(row._id);
+      setItems((prev) => (prev || []).map((it) => (
+        String(it._id) === idStr ? { ...it, frozen: row.frozen } : it
+      )));
+    }
   };
 
   const resetFilters = () => {
@@ -522,11 +544,11 @@ export default function ITAdminParticipants() {
         </div>
 
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button onClick={() => { resetAddForm(); setShowAdd(true); }} className="btn" style={{ backgroundColor: '#2563eb', color: 'white' }}>Add Participant</button>
-          <button onClick={toCSV} className="btn">Download CSV</button>
-          <button onClick={toPDF} className="btn">Download PDF</button>
-          <button onClick={toDOCX} className="btn">Download DOCX</button>
-          <button onClick={resetFilters} className="btn" style={{ backgroundColor: '#ef4444', color: 'white' }}>Reset Filters</button>
+          <button type="button" onClick={() => { resetAddForm(); setShowAdd(true); }} className="btn" style={{ backgroundColor: '#2563eb', color: 'white' }}>Add Participant</button>
+          <button type="button" onClick={toCSV} className="btn">Download CSV</button>
+          <button type="button" onClick={toPDF} className="btn">Download PDF</button>
+          <button type="button" onClick={toDOCX} className="btn">Download DOCX</button>
+          <button type="button" onClick={resetFilters} className="btn" style={{ backgroundColor: '#ef4444', color: 'white' }}>Reset Filters</button>
         </div>
 
         {loading ? <p>Loading...</p> : error ? <p style={{ color: '#dc2626', fontWeight: 600 }}>{error}</p> : (
@@ -567,6 +589,7 @@ export default function ITAdminParticipants() {
                     <td>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                         <button
+  type="button"
   onClick={() => onEdit(r)}
   disabled={!!r.frozen}
   style={{
