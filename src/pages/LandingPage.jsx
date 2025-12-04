@@ -351,7 +351,7 @@ export default function LandingPage() {
         <style>{`
           .dems-footer {
             background: linear-gradient(135deg, #f8f4ed 0%, #fdf9f3 100%);
-            padding: 1rem 3rem;
+            padding: 1rem 0rem;
             width: 100%;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
           }
