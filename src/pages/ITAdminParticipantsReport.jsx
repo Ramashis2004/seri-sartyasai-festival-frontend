@@ -31,10 +31,11 @@ export default function ITAdminParticipantsReport() {
       setError("");
       // If 'present' is set, show reporting status table instead of numeric report
       if (present) {
-        // Load districts and not-reported lists
-        const [allDistricts, notRep] = await Promise.all([
+        // Load districts, not-reported lists, and district-only totals
+        const [allDistricts, notRep, districtOnly] = await Promise.all([
           districtApi.getAllDistricts().catch(() => []),
           itGetNotReported({ districtId, eventId }).catch(() => ({ districts: [], schools: [] })),
+          itGetParticipantsByDistrictReport({ districtId, eventId, scope: "district", frozen }).catch(() => ({ rows: [] })),
         ]);
 
         const notDistrictIds = new Set((notRep?.districts || []).map((d) => String(d._id)));
@@ -43,6 +44,7 @@ export default function ITAdminParticipantsReport() {
         // Optionally narrow to a single district
         const districtsToShow = (allDistricts || []).filter((d) => !districtId || String(d._id) === String(districtId));
 
+        const districtTotals = new Set((districtOnly?.rows || []).filter(r => (Number(r.total) || 0) > 0).map(r => String(r.districtId)));
         const result = [];
         for (const d of districtsToShow) {
           // District row
@@ -51,7 +53,8 @@ export default function ITAdminParticipantsReport() {
             isDistrict: true,
             districtName: d.districtName || "-",
             schoolName: "",
-            reported: !notDistrictIds.has(String(d._id)),
+            // Mark district as reported ONLY if district-level totals exist
+            reported: districtTotals.has(String(d._id)),
           });
 
           // If scope explicitly requests only district rows, skip schools
@@ -94,7 +97,7 @@ export default function ITAdminParticipantsReport() {
   useEffect(() => { load(); }, []);
 
   const exportStatusCSV = () => {
-    const header = ["Sl. No", "District", "School", "Reported"];
+    const header = ["Sl. No", "District", "School", "Students Reported From Schools"];
     const body = statusRows.map((r, i) => [i + 1, r.districtName, r.schoolName, r.reported ? "Reported" : "Not Reported"]);
     const lines = [header, ...body].map(arr => arr.join(","));
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -116,7 +119,7 @@ export default function ITAdminParticipantsReport() {
       doc.text("Reporting Status", 40, 32);
       
       autoTable(doc, {
-        head: [["Sl. No", "District", "School", "Reported"]],
+        head: [["Sl. No", "District", "School", "Students Reported From Schools"]],
         body: statusRows.map((r, i) => [i + 1, r.districtName, r.schoolName, r.reported ? "Reported" : "Not Reported"]),
         startY: 48,
         styles: { fontSize: 10 },
@@ -136,7 +139,7 @@ export default function ITAdminParticipantsReport() {
       const { saveAs } = await import("file-saver");
       const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, TextRun, AlignmentType } = docx;
 
-      const headerCells = ["Sl. No", "District", "School", "Reported"].map(t => new TableCell({
+      const headerCells = ["Sl. No", "District", "School", "Students Reported From Schools"].map(t => new TableCell({
         width: t === "Sl. No" ? { size: 10, type: WidthType.PERCENTAGE } : { size: 30, type: WidthType.PERCENTAGE },
         children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })], alignment: AlignmentType.CENTER })],
       }));
@@ -270,7 +273,7 @@ export default function ITAdminParticipantsReport() {
                     <th>Sl. No</th>
                     <th>District</th>
                     <th>School</th>
-                    <th>Reported</th>
+                    <th>Students Reported From Schools</th>
                   </tr>
                 </thead>
                 <tbody>

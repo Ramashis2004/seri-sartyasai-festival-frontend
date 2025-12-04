@@ -186,7 +186,7 @@ export default function ITAdminOverview() {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
-                    sp.set('present','true');
+                    sp.set('frozen','true');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
                   }}>View All</button>
                 </div>
