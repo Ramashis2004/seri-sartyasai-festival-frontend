@@ -604,7 +604,7 @@ export default function DistrictDashboard() {
   };
 
   const addTeacherRow = () => {
-    setTeachersGrid((prev) => [...prev, { member: "mc_member", name: "", mobile: "", gender: "" }]);
+     setTeachersGrid((prev) => [...prev, { member: "dist_president", name: "", mobile: "", gender: "" }]);
     setTeachersDirty(true);
   };
   const removeTeacherRow = async(idx) => {
