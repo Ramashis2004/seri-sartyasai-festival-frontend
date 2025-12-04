@@ -190,7 +190,13 @@ export default function ITAdminOverview() {
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
                   }}>View All</button>
                 </div>
-                <div className="stat-value red">{metrics?.participants?.total || 0}</div>
+                <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
+                  const sp = new URLSearchParams();
+                  if (districtId) sp.set('districtId', districtId);
+                  if (eventId) sp.set('eventId', eventId);
+                  sp.set('frozen','true');
+                  window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
+                }}>{metrics?.participants?.total || 0}</div>
                 {/* <div style={{ color: '#64748b', textAlign: 'center' }}>Total students currently marked present</div> */}
                 <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button className="btn pill" >Boys - {metrics?.participants?.boys || 0}</button>
@@ -215,7 +221,14 @@ export default function ITAdminOverview() {
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
                   }}>View All</button>
                 </div>
-                <div className="stat-value red">{metrics?.participants?.schoolCount || 0}</div>
+                <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
+                  const sp = new URLSearchParams();
+                  if (districtId) sp.set('districtId', districtId);
+                  if (eventId) sp.set('eventId', eventId);
+                  sp.set('scope','school');
+                  sp.set('frozen','true');
+                  window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
+                }}>{metrics?.participants?.schoolCount || 0}</div>
                 
                 <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button className="btn pill">Boys - {metrics?.participants?.schoolBoys || 0}</button>
@@ -241,7 +254,14 @@ export default function ITAdminOverview() {
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
                   }}>View All</button>
                 </div>
-                <div className="stat-value red">{metrics?.participants?.districtCount || 0}</div>
+                <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
+                  const sp = new URLSearchParams();
+                  if (districtId) sp.set('districtId', districtId);
+                  if (eventId) sp.set('eventId', eventId);
+                  sp.set('scope','district');
+                  sp.set('frozen','true');
+                  window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
+                }}>{metrics?.participants?.districtCount || 0}</div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button className="btn pill" >Boys - {metrics?.participants?.districtBoys || 0}</button>
                   <button className="btn pill" >Girls - {metrics?.participants?.districtGirls || 0}</button>
@@ -307,7 +327,13 @@ export default function ITAdminOverview() {
                     window.location.assign(`/it-admin/reports/teachers?${sp.toString()}`);
                   }}>View All</button>
                 </div>
-                <div className="stat-value red">{teachers?.reported?.total || 0}</div>
+                <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
+                  const sp = new URLSearchParams();
+                  if (districtId) sp.set('districtId', districtId);
+                  if (eventId) sp.set('eventId', eventId);
+                  sp.set('frozen','true');
+                  window.location.assign(`/it-admin/reports/teachers?${sp.toString()}`);
+                }}>{teachers?.reported?.total || 0}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button className="btn pill" >Gents - {teachers?.reported?.male || 0}</button>
                   <button className="btn pill" >Ladies - {teachers?.reported?.female || 0}</button>
@@ -331,7 +357,13 @@ export default function ITAdminOverview() {
                     window.location.assign(`/it-admin/reports/teachers-by-school?${sp.toString()}`);
                   }}>View All</button>
                 </div>
-                <div className="stat-value red">{teachers?.reported?.schoolTeacher || 0}</div>
+                <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
+                  const sp = new URLSearchParams();
+                  if (districtId) sp.set('districtId', districtId);
+                  if (eventId) sp.set('eventId', eventId);
+                  sp.set('frozen','true');
+                  window.location.assign(`/it-admin/reports/teachers-by-school?${sp.toString()}`);
+                }}>{teachers?.reported?.schoolTeacher || 0}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button className="btn pill">Yet to Report - {teachers?.yetToReport?.schoolTeacher || 0}</button>
                 </div>
@@ -353,7 +385,14 @@ export default function ITAdminOverview() {
                     window.location.assign(`/it-admin/reports/teachers?${sp.toString()}`);
                   }}>View All</button>
                 </div>
-                <div className="stat-value red">{teachers?.reported?.districtGuru || 0}</div>
+                <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
+                  const sp = new URLSearchParams();
+                  if (districtId) sp.set('districtId', districtId);
+                  if (eventId) sp.set('eventId', eventId);
+                  sp.set('scope','district');
+                  sp.set('frozen','true');
+                  window.location.assign(`/it-admin/reports/teachers?${sp.toString()}`);
+                }}>{teachers?.reported?.districtGuru || 0}</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button className="btn pill" >Yet to Report - {teachers?.yetToReport?.districtGuru || 0}</button>
                 </div>
