@@ -31,6 +31,11 @@ export default function EventCoordinatorJudgeSheet() {
         setEventTitle("");
         setParticipants([]);
         setEvalFormat({ criteria: [] });
+        setCoordinator1("");
+        setCoordinator2("");
+        setJudge1("");
+        setJudge2("");
+        setJudge3("");
       } finally {
         setLoading(false);
       }
@@ -41,7 +46,16 @@ export default function EventCoordinatorJudgeSheet() {
     setEventId(id);
     const ev = (events || []).find((e) => String(e._id) === String(id));
     setEventTitle(ev?.title || "");
-    if (!id) { setParticipants([]); setEvalFormat({ criteria: [] }); return; }
+    if (!id) {
+      setParticipants([]);
+      setEvalFormat({ criteria: [] });
+      setCoordinator1("");
+      setCoordinator2("");
+      setJudge1("");
+      setJudge2("");
+      setJudge3("");
+      return;
+    }
     try {
       setLoading(true);
       const [pts, fmt] = await Promise.all([
@@ -49,7 +63,18 @@ export default function EventCoordinatorJudgeSheet() {
         ecGetEvaluationFormat({ scope, eventId: id }).catch(() => ({ criteria: [] })),
       ]);
       setParticipants(Array.isArray(pts) ? pts : []);
-      setEvalFormat(fmt && fmt.criteria ? fmt : { criteria: [] });
+      const effectiveFmt = fmt && fmt.criteria ? fmt : { criteria: [] };
+      setEvalFormat(effectiveFmt);
+
+      // Populate coordinators from evaluation format (if present)
+      setCoordinator1(effectiveFmt.coordinator1 || "");
+      setCoordinator2(effectiveFmt.coordinator2 || "");
+
+      // Populate first three judges from evaluation format.judges (if present)
+      const judgesArr = Array.isArray(effectiveFmt.judges) ? effectiveFmt.judges : [];
+      setJudge1(judgesArr[0] || "");
+      setJudge2(judgesArr[1] || "");
+      setJudge3(judgesArr[2] || "");
     } finally { setLoading(false); }
   };
 
@@ -157,6 +182,7 @@ export default function EventCoordinatorJudgeSheet() {
 
       const leftYStart = 140;
       const lineGap = 18;
+      const judgesFromFormat = (evalFormat?.judges || []).map(j => j || '');
       doc.setFontSize(11);
       doc.text(`Coordinator 1: ${coordinator1 || ''}`, 40, leftYStart);
       doc.text(`Coordinator 2: ${coordinator2 || ''}`, 40, leftYStart + lineGap);

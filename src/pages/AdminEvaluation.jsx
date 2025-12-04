@@ -20,6 +20,9 @@ export default function AdminEvaluation() {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [criteria, setCriteria] = useState([{ label: "", maxMarks: 0 }]);
+  const [judges, setJudges] = useState(["", "", ""]);
+  const [coordinator1, setCoordinator1] = useState("");
+  const [coordinator2, setCoordinator2] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +36,9 @@ export default function AdminEvaluation() {
       setEvents(Array.isArray(list) ? list : []);
       setSelectedEventId("");
       setCriteria([{ label: "", maxMarks: 0 }]);
+      setJudges(["", "", ""]);
+      setCoordinator1("");
+      setCoordinator2("");
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load events");
       setEvents([]);
@@ -48,8 +54,14 @@ export default function AdminEvaluation() {
       setLoading(true);
       const fmt = await getEvaluationFormat(scope, eventId);
       setCriteria((fmt?.criteria && fmt.criteria.length) ? fmt.criteria.map(c => ({ label: c.label || "", maxMarks: Number(c.maxMarks)||0 })) : [{ label: "", maxMarks: 0 }]);
+      setJudges((fmt?.judges && fmt.judges.length) ? fmt.judges.map(j => j || "") : ["", "", ""]);
+      setCoordinator1(fmt?.coordinator1 || "");
+      setCoordinator2(fmt?.coordinator2 || "");
     } catch {
       setCriteria([{ label: "", maxMarks: 0 }]);
+      setJudges(["", "", ""]);
+      setCoordinator1("");
+      setCoordinator2("");
     } finally {
       setLoading(false);
     }
@@ -72,13 +84,43 @@ export default function AdminEvaluation() {
     setCriteria((criteria || []).map((c, i) => i === idx ? { ...c, [field]: field === 'maxMarks' ? Number(value) : value } : c));
   };
 
+  const updateJudge = (idx, value) => {
+    setJudges((judges || []).map((j, i) => i === idx ? value : j));
+  };
+
+  const addJudge = () => {
+    setJudges([...(judges || []), ""]);
+  };
+
+  const removeJudge = async (idx) => {
+    const res = await Swal.fire({
+      title: 'Remove this judge?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, remove',
+      cancelButtonText: 'Cancel'
+    });
+    if (!res.isConfirmed) return;
+    setJudges((judges || []).filter((_, i) => i !== idx));
+  };
+
   const save = async () => {
     if (!selectedEventId) { await Swal.fire({ icon: 'warning', title: 'Please select an event' }); return; }
     const clean = (criteria || []).filter(c => (c.label||"").trim() && Number(c.maxMarks) >= 0);
     if (!clean.length) { await Swal.fire({ icon: 'warning', title: 'Please add at least one criterion with marks' }); return; }
+    const judgesClean = (judges || []).map(j => String(j || '').trim()).filter(j => j);
+    const coordinator1Clean = String(coordinator1 || '').trim();
+    const coordinator2Clean = String(coordinator2 || '').trim();
     try {
       setLoading(true);
-      await saveEvaluationFormat({ scope, eventId: selectedEventId, criteria: clean });
+      await saveEvaluationFormat({
+        scope,
+        eventId: selectedEventId,
+        criteria: clean,
+        judges: judgesClean,
+        coordinator1: coordinator1Clean,
+        coordinator2: coordinator2Clean,
+      });
       await Swal.fire({ icon: 'success', title: 'Saved successfully' });
     } catch (e) {
       await Swal.fire({ icon: 'error', title: 'Save failed', text: e?.response?.data?.message || 'Failed to save' });
@@ -157,8 +199,49 @@ export default function AdminEvaluation() {
                     <div style={{ color: '#64748b' }}>Total Marks: <b>{totalMarks}</b></div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn" onClick={addRow}>+ Add Criterion</button>
-                      <button className="btn primary" onClick={save}>Save</button>
                     </div>
+                  </div>
+
+                  <div style={{ marginTop: 20 }}>
+                    <h4 style={{ margin: '8px 0' }}>Judges</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
+                      {(judges || []).map((j, idx) => (
+                        <React.Fragment key={idx}>
+                          <input
+                            value={j}
+                            onChange={(e) => updateJudge(idx, e.target.value)}
+                            placeholder={`Name of Judge ${idx + 1}`}
+                          />
+                          <button
+                            type="button"
+                            className="btn small danger"
+                            onClick={() => removeJudge(idx)}
+                          >
+                            Remove
+                          </button>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <button type="button" className="btn" onClick={addJudge}>+ Add Judge</button>
+                    </div>
+
+                    <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <input
+                        value={coordinator1}
+                        onChange={(e) => setCoordinator1(e.target.value)}
+                        placeholder="Coordinator 1 name"
+                      />
+                      <input
+                        value={coordinator2}
+                        onChange={(e) => setCoordinator2(e.target.value)}
+                        placeholder="Coordinator 2 name"
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+                    <button className="btn primary" onClick={save}>Save</button>
                   </div>
                 </>
               )}
