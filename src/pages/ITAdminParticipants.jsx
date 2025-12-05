@@ -149,7 +149,17 @@ export default function ITAdminParticipants() {
     title: "Edit Participant",
     html: `
       <input id="swal-name" class="swal2-input" placeholder="Name" value="${row.name || ""}">
-      <input id="swal-class" class="swal2-input" placeholder="Class" value="${row.className || ""}">
+       <div style="display: flex; align-items: center; gap: 10px;">
+  <label style="width: 80px;">Class:</label>
+
+  <select id="swal-class" class="swal2-input" style="margin: 0;">
+    <option value="">Select Class</option>
+    <option value="6" ${row.className === "6" ? "selected" : ""}>6</option>
+    <option value="7" ${row.className === "7" ? "selected" : ""}>7</option>
+    <option value="8" ${row.className === "8" ? "selected" : ""}>8</option>
+    <option value="9" ${row.className === "9" ? "selected" : ""}>9</option>
+  </select>
+</div>
 
       <div style="text-align:left; margin-top:10px;margin-left:82px">
         <label><strong>Gender:</strong></label>
