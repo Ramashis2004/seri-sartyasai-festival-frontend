@@ -10,6 +10,11 @@ export const itUpdateParticipant = async (id, payload) => {
   return data;
 };
 
+export const itDeleteParticipant = async (id,source) => {
+  const { data } = await API.delete(`/api/it-admin/participants/${id}?source=${source}`);
+  return data;
+};
+
 export const itFinalizeParticipants = async (payload) => {
   const { data } = await API.post(`/api/it-admin/participants/finalize`, payload);
   return data;
@@ -28,6 +33,11 @@ export const itListTeachers = async (params = {}) => {
 
 export const itUpdateTeacher = async (id, payload) => {
   const { data } = await API.patch(`/api/it-admin/teachers/${id}`, payload);
+  return data;
+};
+
+export const itDeleteTeacher = async (id,source) => {
+  const { data } = await API.delete(`/api/it-admin/teachers/${id}?source=${source}`);
   return data;
 };
 

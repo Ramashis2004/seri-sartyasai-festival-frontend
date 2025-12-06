@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import { itListParticipants, itUpdateParticipant, itFinalizeParticipants, itListEvents, itListDistrictEvents, itCreateParticipant } from "../api/itAdminApi";
+import { itListParticipants, itUpdateParticipant,itDeleteParticipant, itFinalizeParticipants, itListEvents, itListDistrictEvents, itCreateParticipant } from "../api/itAdminApi";
 import districtApi from "../api/districtApi";
 import Swal from "sweetalert2";
  
@@ -149,7 +149,7 @@ export default function ITAdminParticipants() {
     title: "Edit Participant",
     html: `
       <input id="swal-name" class="swal2-input" placeholder="Name" value="${row.name || ""}">
-       <div style="display: flex; align-items: center; gap: 10px;">
+     <div style="display: flex; align-items: center; gap: 10px;">
   <label style="width: 80px;">Class:</label>
 
   <select id="swal-class" class="swal2-input" style="margin: 0;">
@@ -160,6 +160,7 @@ export default function ITAdminParticipants() {
     <option value="9" ${row.className === "9" ? "selected" : ""}>9</option>
   </select>
 </div>
+
 
       <div style="text-align:left; margin-top:10px;margin-left:82px">
         <label><strong>Gender:</strong></label>
@@ -224,6 +225,47 @@ export default function ITAdminParticipants() {
       await load();
     } catch {}
   };
+
+  const handleDelete = async (row) => {
+  if (row.frozen) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Cannot Delete",
+      text: "This participant is frozen and cannot be deleted.",
+    });
+  }
+
+  const confirm = await Swal.fire({
+    title: "Delete Participant?",
+    text: `${row.name} will be permanently removed.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Delete",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#d33",
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  try {
+    await itDeleteParticipant(row._id, row.source);
+
+    // Remove instantly from UI
+    setItems(prev => prev.filter(p => p._id !== row._id));
+
+    Swal.fire({
+      icon: "success",
+      title: "Participant Deleted",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  } catch (e) {
+    const msg = e?.response?.data?.message || "Delete failed";
+    Swal.fire({ icon: "error", title: "Error", text: msg });
+  }
+};
+
+
 
   const onToggleFreezeRow = async (row) => {
     try {
@@ -599,23 +641,41 @@ export default function ITAdminParticipants() {
                     <td>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                         <button
-  type="button"
-  onClick={() => onEdit(r)}
-  disabled={!!r.frozen}
-  style={{
-    fontSize: "13px",
-    marginLeft: "6px",
-    background: "white",
-    color: "#0077b6",
-    textDecoration: "none",
-    fontWeight: "bold",
-    borderRadius: "6px",
-    transition: "0.3s",
-    cursor: "pointer",
-  }}
->
-  Edit
-</button>
+                        type="button"
+                        onClick={() => onEdit(r)}
+                        disabled={!!r.frozen}
+                        style={{
+                          fontSize: "13px",
+                          marginLeft: "6px",
+                          background: "white",
+                          color: "#0077b6",
+                          textDecoration: "none",
+                          fontWeight: "bold",
+                          borderRadius: "6px",
+                          transition: "0.3s",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                      onClick={() => handleDelete(r)}
+                      disabled={r.frozen}
+                      style={{
+                        fontSize: "13px",
+                        marginLeft: "6px",
+                        background: "white",
+                        color: r.frozen ? "#aaa" : "#b91c1c",
+                        fontWeight: "bold",
+                        borderRadius: "6px",
+                        cursor: r.frozen ? "not-allowed" : "pointer",
+                        opacity: r.frozen ? 0.5 : 1
+                      }}
+                    >
+                      Delete
+                    </button>
+
+
 
                       </div>
                     </td>

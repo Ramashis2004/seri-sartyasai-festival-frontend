@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import { itListTeachers, itUpdateTeacher, itFinalizeTeachers, itCreateTeacher } from "../api/itAdminApi";
+import { itListTeachers, itUpdateTeacher,itDeleteTeacher, itFinalizeTeachers, itCreateTeacher } from "../api/itAdminApi";
 import districtApi from "../api/districtApi";
 import adminApi from "../api/adminApi";
 import Swal from "sweetalert2";
@@ -617,6 +617,39 @@ export default function ITAdminTeachers() {
     }
   };
 
+  const handleDelete = async (row) => {
+  if (row.frozen) {
+    Swal.fire({ icon: "error", title: "Cannot delete", text: "Frozen records cannot be deleted!" });
+    return;
+  }
+
+  const confirm = await Swal.fire({
+    title: `Delete ${row.name}?`,
+    text: "This action cannot be undone!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, Delete",
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  try {
+    await itDeleteTeacher(row._id, row.source );  // <-- API Call
+
+    setItems((prev) => prev.filter((t) => String(t._id) !== String(row._id))); // remove from UI
+    Swal.fire({ icon: "success", title: "Deleted Successfully", timer: 1500 });
+  } catch (err) {
+    Swal.fire({
+      icon: "error",
+      title: "Delete Failed",
+      text: err?.response?.data?.message || "Something went wrong",
+    });
+  }
+};
+
+
   // Add some styles for the form
   const styles = `
     .swal2-form-row {
@@ -759,6 +792,24 @@ div.swal2-container .swal2-checkbox {
                       }}
                     >
                       Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r)}
+                      disabled={!!r.frozen}
+                      style={{
+                        fontSize: "13px",
+                        marginLeft: "6px",
+                        background: "white",
+                        color: "#d62207ff",
+                        textDecoration: "none",
+                        fontWeight: "bold",
+                        borderRadius: "6px",
+                        transition: "0.3s",
+                        padding: "4px 10px",
+                        cursor: r.frozen ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      Delete
                     </button>
 
                       </div>
