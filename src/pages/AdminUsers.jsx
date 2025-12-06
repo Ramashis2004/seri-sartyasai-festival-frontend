@@ -175,6 +175,12 @@ export default function AdminUsers() {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [selectedRole, setSelectedRole] = useState("all");
   const [approvalFilter, setApprovalFilter] = useState("all");
+  const [filterDistrictId, setFilterDistrictId] = useState("");
+  const [filterSchoolName, setFilterSchoolName] = useState("");
+  const [filterDistricts, setFilterDistricts] = useState([]);
+  const [filterSchools, setFilterSchools] = useState([]);
+  const [loadingFilterDistricts, setLoadingFilterDistricts] = useState(false);
+  const [loadingFilterSchools, setLoadingFilterSchools] = useState(false);
 
   const menuRef = useRef(null);
 
@@ -207,6 +213,42 @@ export default function AdminUsers() {
   useEffect(() => {
     loadAll();
   }, []);
+
+  // Load Districts for filters
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingFilterDistricts(true);
+        const d = await districtApi.getAllDistricts();
+        setFilterDistricts(d || []);
+      } catch {
+        setFilterDistricts([]);
+      } finally {
+        setLoadingFilterDistricts(false);
+      }
+    })();
+  }, []);
+
+  // Load Schools for filters when district changes
+  useEffect(() => {
+    const loadSchools = async () => {
+      if (!filterDistrictId) {
+        setFilterSchools([]);
+        setFilterSchoolName("");
+        return;
+      }
+      try {
+        setLoadingFilterSchools(true);
+        const s = await districtApi.getAllSchools({ districtId: filterDistrictId });
+        setFilterSchools(s || []);
+      } catch {
+        setFilterSchools([]);
+      } finally {
+        setLoadingFilterSchools(false);
+      }
+    };
+    loadSchools();
+  }, [filterDistrictId]);
 
   // Load School Roles (for school_user editing)
   useEffect(() => {
@@ -310,6 +352,35 @@ export default function AdminUsers() {
                   <option value="approved">Approved</option>
                 </select>
               </div>
+              <div className="filter-group">
+                <label>District: </label>
+                <select
+                  value={filterDistrictId}
+                  onChange={(e) => setFilterDistrictId(e.target.value)}
+                >
+                  <option value="">All</option>
+                  {filterDistricts.map((d) => (
+                    <option key={d._id} value={d._id}>
+                      {d.districtName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label>School: </label>
+                <select
+                  value={filterSchoolName}
+                  onChange={(e) => setFilterSchoolName(e.target.value)}
+                  disabled={!filterDistrictId || loadingFilterSchools}
+                >
+                  <option value="">All</option>
+                  {filterSchools.map((s) => (
+                    <option key={s._id} value={s.schoolName}>
+                      {s.schoolName}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -328,6 +399,8 @@ export default function AdminUsers() {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>District</th>
+                  <th>School</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -337,7 +410,9 @@ export default function AdminUsers() {
   .filter((u) => (selectedRole === "all" || u._role === selectedRole) && 
                  (approvalFilter === "all" || 
                   (approvalFilter === "pending" && !u.approved) || 
-                  (approvalFilter === "approved" && u.approved)))
+                  (approvalFilter === "approved" && u.approved)) &&
+                 (filterDistrictId === "" || u.districtId === filterDistrictId) &&
+                 (filterSchoolName === "" || (u.schoolName || "") === filterSchoolName))
   .map((u, i) => (
 
                   <tr key={u._id}>
@@ -345,6 +420,8 @@ export default function AdminUsers() {
                     <td>{u.name}</td>
                     <td>{u.email}</td>
                     <td>{u._role}</td>
+                    <td>{(filterDistricts.find((d) => d._id === u.districtId) || {}).districtName || "-"}</td>
+                    <td>{u.schoolName || "-"}</td>
                     <td>
                       <span
                         className={`status-badge ${
