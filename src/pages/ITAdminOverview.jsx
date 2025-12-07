@@ -82,20 +82,22 @@ export default function ITAdminOverview() {
       setStudentsYet(sy || { schoolWise: [], districtWise: [] });
       setTeachers(to || { reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } });
 
-      const agg = (arr) => {
+      const agg = (arr, scope) => {
         const map = new Map();
         (Array.isArray(arr) ? arr : []).forEach((p) => {
           const id = String(p.eventId || p.event || p._id || '');
           if (!id) return;
           const title = p.eventTitle || p.title || 'Event';
-          const cur = map.get(id) || { eventId: id, title, nomination: 0, present: 0 };
+          const audience = scope === 'school' ? (String(p.group || '').toLowerCase() || '') : '';
+          const key = scope === 'school' ? `${id}__${audience}` : id;
+          const cur = map.get(key) || { eventId: id, title, nomination: 0, present: 0, audience: audience ? (audience === 'senior' ? 'Senior' : 'Junior') : '-' };
           cur.nomination += 1; // total participated (nominated)
           if (p.present) cur.present += 1; // present count
-          map.set(id, cur);
+          map.set(key, cur);
         });
-        return Array.from(map.values()).sort((a,b) => a.title.localeCompare(b.title));
+        return Array.from(map.values()).sort((a,b) => a.title.localeCompare(b.title) || String(a.audience).localeCompare(String(b.audience)));
       };
-      setEventAgg({ school: agg(schoolParts), district: agg(districtParts) });
+      setEventAgg({ school: agg(schoolParts, 'school'), district: agg(districtParts, 'district') });
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load overview");
       setMetrics(null);
@@ -527,8 +529,9 @@ export default function ITAdminOverview() {
                     <button className="btn ghost" onClick={() => setShowEventWise(v => !v)}>{showEventWise ? 'Hide' : 'Show'}</button>
                     <button className="btn" onClick={() => {
                       const lines = [];
-                      lines.push(["Scope","Event","Nomination","Present"].join(","));
-                      const toLine = (scope, r) => [scope, r.title, String(r.nomination||0), String(r.present||0)].map(v=>(/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v))).join(",");
+                      lines.push(["Scope","Event","Audience","Nomination","Present"].join(","));
+                      const esc = (v) => (/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v));
+                      const toLine = (scope, r) => [scope, r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)].map(esc).join(",");
                       eventAgg.school.forEach(r=>lines.push(toLine('School', r)));
                       eventAgg.district.forEach(r=>lines.push(toLine('District', r)));
                       const blob = new Blob([lines.join("\n")], { type: 'text/csv;charset=utf-8;' });
@@ -543,12 +546,14 @@ export default function ITAdminOverview() {
                         const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
                         doc.setFontSize(14);
                         doc.text('Event-wise Report', 40, 32);
-                        const head = [['Event','Nomination','Present']];
-                        const toBody = (arr) => arr.map(r => [r.title, String(r.nomination||0), String(r.present||0)]);
-                        autoTable(doc, { head, body: toBody(eventAgg.school), startY: 48, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } , didDrawPage: (data)=>{ doc.setFontSize(12); doc.text('School Events', 40, 44);} });
+                        const headSchool = [['Event','Audience','Nomination','Present']];
+                        const toBodySchool = (arr) => arr.map(r => [r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)]);
+                        autoTable(doc, { head: headSchool, body: toBodySchool(eventAgg.school), startY: 48, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } , didDrawPage: (data)=>{ doc.setFontSize(12); doc.text('School Events', 40, 44);} });
                         const afterY = doc.lastAutoTable.finalY + 18;
                         doc.setFontSize(12); doc.text('District Events', 40, afterY);
-                        autoTable(doc, { head, body: toBody(eventAgg.district), startY: afterY + 6, headStyles: { fillColor: [16,185,129] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
+                        const headDistrict = [['Event','Nomination','Present']];
+                        const toBodyDistrict = (arr) => arr.map(r => [r.title, String(r.nomination||0), String(r.present||0)]);
+                        autoTable(doc, { head: headDistrict, body: toBodyDistrict(eventAgg.district), startY: afterY + 6, headStyles: { fillColor: [16,185,129] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
                         doc.save('event_wise_report.pdf');
                       } catch(e) {
                         alert('Please install jspdf and jspdf-autotable to export PDF');
@@ -565,6 +570,7 @@ export default function ITAdminOverview() {
                         <thead>
                           <tr>
                             <th>Event</th>
+                            <th>Audience</th>
                             <th>Nomination</th>
                             <th>Present</th>
                           </tr>
@@ -573,6 +579,7 @@ export default function ITAdminOverview() {
                           {(eventAgg.school || []).length ? (eventAgg.school).map((r, i) => (
                             <tr key={`s_${r.eventId}_${i}`}>
                               <td>{r.title}</td>
+                              <td>{r.audience || '-'}</td>
                               <td>{r.nomination || 0}</td>
                               <td>{r.present || 0}</td>
                             </tr>
