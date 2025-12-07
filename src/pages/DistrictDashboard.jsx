@@ -324,18 +324,6 @@ export default function DistrictDashboard() {
     const list = Array.isArray(data) ? data : [];
     setParticipants(list);
 
-    // Check localStorage only if it contains actual unsaved edits
-    const stored = localStorage.getItem(LS_PARTICIPANTS_KEY);
-    const storedGrid = stored ? JSON.parse(stored) : null;
-    const hasStored = storedGrid && typeof storedGrid === "object" && Object.keys(storedGrid).length > 0;
-
-    // If user has unsaved edits → load from LS
-    if (hasStored) {
-      setParticipantsGrid(storedGrid);
-      setParticipantsDirty(true);
-      return;
-    }
-
     // Otherwise → load from API
     const grid = {};
     list.forEach(p => {
@@ -358,18 +346,8 @@ export default function DistrictDashboard() {
 };
 
 
-  // Load events and participants on mount and hydrate participantsGrid from localStorage (if present)
+  // Load events and participants on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LS_PARTICIPANTS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === "object") {
-          setParticipantsGrid(parsed);
-          setParticipantsDirty(true);
-        }
-      }
-    } catch (_) {}
     loadEvents(1);
     refreshParticipants();
   }, []);
@@ -378,7 +356,6 @@ export default function DistrictDashboard() {
     if (isEventFrozen(eventId)) return; // frozen: do not allow editing for this event
     setParticipantsGrid((prev) => {
       const next = { ...prev, [eventId]: { ...(prev[eventId] || {}), [field]: value } };
-      try { localStorage.setItem(LS_PARTICIPANTS_KEY, JSON.stringify(next)); } catch (_) {}
       return next;
     });
     setParticipantsDirty(true);
@@ -487,7 +464,6 @@ export default function DistrictDashboard() {
     if (!result.isConfirmed) return;
 
     try {
-      try { localStorage.removeItem(LS_PARTICIPANTS_KEY); } catch (_) {}
       await refreshParticipants();
       setShowPreview(false);
       setParticipantsDirty(false);
@@ -530,18 +506,7 @@ export default function DistrictDashboard() {
     const list = Array.isArray(data) ? data : [];
     setTeachers(list);
 
-    // Check localStorage only if it has REAL unsaved values
-    const stored = localStorage.getItem(LS_TEACHERS_KEY);
-    const storedList = stored ? JSON.parse(stored) : null;
-    const hasStored = Array.isArray(storedList) && storedList.length > 0;
-
-    // If user has unsaved edits, use stored data
-    if (hasStored) {
-      setTeachersGrid(storedList);
-      setTeachersDirty(true);
-      setTFormKey((k) => k + 1);
-      return;
-    }
+    // Do not hydrate from localStorage; always use API data
 
     // Otherwise → Load fresh data from API
     const rows = [];
@@ -597,7 +562,6 @@ export default function DistrictDashboard() {
     setTeachersGrid((prev) => {
       const copy = [...prev];
       copy[index] = { ...(copy[index] || {}), [field]: value };
-      try { localStorage.setItem(LS_TEACHERS_KEY, JSON.stringify(copy)); } catch (_) {}
       return copy;
     });
     setTeachersDirty(true);
@@ -678,7 +642,6 @@ export default function DistrictDashboard() {
   if (!result.isConfirmed) return;
 
   try {
-    try { localStorage.removeItem(LS_TEACHERS_KEY); } catch (_) {}
     await refreshTeachers();
     setShowTeacherPreview(false);
     setTeachersDirty(false);
