@@ -498,14 +498,13 @@ export default function DistrictDashboard() {
   };
 
   const [teachers, setTeachers] = useState([]);
-  const [teachersGrid, setTeachersGrid] = useState([{ member: "secretary_manager", name: "", mobile: "", gender: "" }]);
+  const [teachersGrid, setTeachersGrid] = useState([{ member: "dist_president", name: "", mobile: "", gender: "" }]);
   const [teachersDirty, setTeachersDirty] = useState(false);
   const [tFormKey, setTFormKey] = useState(0);
   const [showTeacherPreview, setShowTeacherPreview] = useState(false);
   const [savingTeachers, setSavingTeachers] = useState(false);
 
   const presetMembers = [
-    "secretary_manager",
     "principal",
     "teacher",
     "guru",
@@ -547,11 +546,11 @@ export default function DistrictDashboard() {
     // Otherwise → Load fresh data from API
     const rows = [];
 
-    // Insert secretary_manager first (if exists)
+    // Insert legacy secretary_manager as dist_president first (if exists)
     const sec = list.find(t => (t.member || "").toLowerCase() === "secretary_manager");
     if (sec) {
       rows.push({
-        member: "secretary_manager",
+        member: "dist_president",
         name: sec.name || "",
         mobile: sec.mobile || "",
         gender: (sec.gender || "").toLowerCase(),
@@ -565,10 +564,11 @@ export default function DistrictDashboard() {
       .forEach(t => {
         const rawMember = t.member || "mc_member";
         const code = rawMember.toLowerCase();
-        const isKnown = presetMembers.includes(code);
+        const normalized = code === "secretary_manager" ? "dist_president" : code;
+        const isKnown = presetMembers.includes(normalized);
 
         rows.push({
-          member: isKnown ? code : "other",
+          member: isKnown ? normalized : "other",
           memberOther: isKnown ? "" : rawMember,
           name: t.name || "",
           mobile: t.mobile || "",
@@ -579,7 +579,7 @@ export default function DistrictDashboard() {
 
     // Ensure at least one row exists
     if (!rows.length) {
-      rows.push({ member: "secretary_manager", name: "", mobile: "", gender: "" });
+      rows.push({ member: "dist_president", name: "", mobile: "", gender: "" });
     }
 
     setTeachersGrid(rows);
