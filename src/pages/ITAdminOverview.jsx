@@ -95,7 +95,12 @@ export default function ITAdminOverview() {
           if (p.present) cur.present += 1; // present count
           map.set(key, cur);
         });
-        return Array.from(map.values()).sort((a,b) => a.title.localeCompare(b.title) || String(a.audience).localeCompare(String(b.audience)));
+        const arrOut = Array.from(map.values());
+        if (scope === 'school') {
+          const rank = (aud) => aud === 'Senior' ? 0 : (aud === 'Junior' ? 1 : 2);
+          return arrOut.sort((a, b) => (rank(a.audience) - rank(b.audience)) || a.title.localeCompare(b.title));
+        }
+        return arrOut.sort((a,b) => a.title.localeCompare(b.title));
       };
       setEventAgg({ school: agg(schoolParts, 'school'), district: agg(districtParts, 'district') });
     } catch (e) {
@@ -532,8 +537,11 @@ export default function ITAdminOverview() {
                       lines.push(["Scope","Event","Audience","Nomination","Present"].join(","));
                       const esc = (v) => (/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v));
                       const toLine = (scope, r) => [scope, r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)].map(esc).join(",");
-                      eventAgg.school.forEach(r=>lines.push(toLine('School', r)));
-                      eventAgg.district.forEach(r=>lines.push(toLine('District', r)));
+                      const rank = (aud) => aud === 'Senior' ? 0 : (aud === 'Junior' ? 1 : 2);
+                      const schoolRows = (eventAgg.school || []).slice().sort((a,b)=> (rank(a.audience)-rank(b.audience)) || a.title.localeCompare(b.title));
+                      const districtRows = (eventAgg.district || []).slice().sort((a,b)=> a.title.localeCompare(b.title));
+                      schoolRows.forEach(r=>lines.push(toLine('School', r)));
+                      districtRows.forEach(r=>lines.push(toLine('District', r)));
                       const blob = new Blob([lines.join("\n")], { type: 'text/csv;charset=utf-8;' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
@@ -547,13 +555,16 @@ export default function ITAdminOverview() {
                         doc.setFontSize(14);
                         doc.text('Event-wise Report', 40, 32);
                         const headSchool = [['Event','Audience','Nomination','Present']];
+                        const rank = (aud) => aud === 'Senior' ? 0 : (aud === 'Junior' ? 1 : 2);
+                        const schoolSorted = (eventAgg.school || []).slice().sort((a,b)=> (rank(a.audience)-rank(b.audience)) || a.title.localeCompare(b.title));
                         const toBodySchool = (arr) => arr.map(r => [r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)]);
-                        autoTable(doc, { head: headSchool, body: toBodySchool(eventAgg.school), startY: 48, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } , didDrawPage: (data)=>{ doc.setFontSize(12); doc.text('School Events', 40, 44);} });
+                        autoTable(doc, { head: headSchool, body: toBodySchool(schoolSorted), startY: 48, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } , didDrawPage: (data)=>{ doc.setFontSize(12); doc.text('School Events', 40, 44);} });
                         const afterY = doc.lastAutoTable.finalY + 18;
                         doc.setFontSize(12); doc.text('District Events', 40, afterY);
                         const headDistrict = [['Event','Nomination','Present']];
+                        const districtSorted = (eventAgg.district || []).slice().sort((a,b)=> a.title.localeCompare(b.title));
                         const toBodyDistrict = (arr) => arr.map(r => [r.title, String(r.nomination||0), String(r.present||0)]);
-                        autoTable(doc, { head: headDistrict, body: toBodyDistrict(eventAgg.district), startY: afterY + 6, headStyles: { fillColor: [16,185,129] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
+                        autoTable(doc, { head: headDistrict, body: toBodyDistrict(districtSorted), startY: afterY + 6, headStyles: { fillColor: [16,185,129] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
                         doc.save('event_wise_report.pdf');
                       } catch(e) {
                         alert('Please install jspdf and jspdf-autotable to export PDF');
