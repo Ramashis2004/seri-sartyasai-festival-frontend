@@ -2,7 +2,7 @@ import React from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useEffect, useState, useMemo } from "react";
 import districtApi from "../api/districtApi";
-import { itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview } from "../api/itAdminApi";
+import { itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview, itListParticipants } from "../api/itAdminApi";
 import "../styles/itAdminOverview.css";
 
 export default function ITAdminOverview() {
@@ -24,6 +24,10 @@ export default function ITAdminOverview() {
   const [teachers, setTeachers] = useState({ reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Event-wise aggregation
+  const [eventAgg, setEventAgg] = useState({ school: [], district: [] });
+  const [showEventWise, setShowEventWise] = useState(false);
 
   const [showSchoolsNotReported, setShowSchoolsNotReported] = useState(false);
   const [showDistrictsNotReported, setShowDistrictsNotReported] = useState(false);
@@ -65,22 +69,40 @@ export default function ITAdminOverview() {
     try {
       setLoading(true);
       setError("");
-      const [m, nr, sy, to] = await Promise.all([
+      const [m, nr, sy, to, schoolParts, districtParts] = await Promise.all([
         itGetOverviewMetrics(params),
         itGetNotReported(params),
         itGetStudentsYetToReport(params),
         itGetTeachersOverview(params),
+        itListParticipants({ scope: 'school', districtId, eventId }).catch(() => []),
+        itListParticipants({ scope: 'district', districtId, eventId }).catch(() => []),
       ]);
       setMetrics(m || null);
       setNotReported(nr || { districts: [], schools: [] });
       setStudentsYet(sy || { schoolWise: [], districtWise: [] });
       setTeachers(to || { reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } });
+
+      const agg = (arr) => {
+        const map = new Map();
+        (Array.isArray(arr) ? arr : []).forEach((p) => {
+          const id = String(p.eventId || p.event || p._id || '');
+          if (!id) return;
+          const title = p.eventTitle || p.title || 'Event';
+          const cur = map.get(id) || { eventId: id, title, nomination: 0, present: 0 };
+          cur.nomination += 1; // total participated (nominated)
+          if (p.present) cur.present += 1; // present count
+          map.set(id, cur);
+        });
+        return Array.from(map.values()).sort((a,b) => a.title.localeCompare(b.title));
+      };
+      setEventAgg({ school: agg(schoolParts), district: agg(districtParts) });
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load overview");
       setMetrics(null);
       setNotReported({ districts: [], schools: [] });
       setStudentsYet({ schoolWise: [], districtWise: [] });
       setTeachers({ reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } });
+      setEventAgg({ school: [], district: [] });
     } finally {
       setLoading(false);
     }
@@ -434,73 +456,161 @@ export default function ITAdminOverview() {
               </div>
             </div>
 
-            <div className="card" style={{ display: 'grid', gap: 8 }}>
-              <div className="card-header">
-                <h3 style={{ margin: 0 }}>Yet to Report</h3>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {/* <button className="btn ghost" onClick={() => {
-                    const sp = new URLSearchParams();
-                    if (districtId) sp.set('districtId', districtId);
-                    if (eventId) sp.set('eventId', eventId);
-                    sp.set('present','false');
-                    window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View All</button> */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 12 }}>
+              {/* Left: Yet to Report */}
+              <div className="card" style={{ display: 'grid', gap: 8 }}>
+                <div className="card-header">
+                  <h3 style={{ margin: 0 }}>Yet to Report</h3>
+                  <div style={{ display: 'flex', gap: 8 }}></div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button className="btn ghost" onClick={() => setShowSchoolsNotReported((v) => !v)}>Schools: {notReported.schools.length}</button>
-                <button className="btn ghost" onClick={() => setShowDistrictsNotReported((v) => !v)}>Districts: {notReported.districts.length}</button>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <button className="btn ghost" onClick={() => setShowSchoolsNotReported((v) => !v)}>Schools: {notReported.schools.length}</button>
+                  <button className="btn ghost" onClick={() => setShowDistrictsNotReported((v) => !v)}>Districts: {notReported.districts.length}</button>
+                </div>
+
+                {showSchoolsNotReported && (
+                  <div style={{ marginTop: 12 }}>
+                    <div className="table-wrapper">
+                      <table className="styled-table">
+                        <thead>
+                          <tr>
+                            <th>Sl.No</th>
+                            <th>School</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {notReported.schools.length ? notReported.schools.map((s, i) => (
+                            <tr key={s._id || `${s.schoolName}_${i}`}>
+                              <td>{i + 1}</td>
+                              <td>{s.schoolName}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={2} style={{ textAlign: 'center' }}>No schools</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {showDistrictsNotReported && (
+                  <div style={{ marginTop: 12 }}>
+                    <div className="table-wrapper">
+                      <table className="styled-table">
+                        <thead>
+                          <tr>
+                            <th>Sl.No</th>
+                            <th>District</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {notReported.districts.length ? notReported.districts.map((d, i) => (
+                            <tr key={d._id}>
+                              <td>{i + 1}</td>
+                              <td>{d.districtName}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={2} style={{ textAlign: 'center' }}>No districts</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {showSchoolsNotReported && (
-                <div style={{ marginTop: 12 }}>
-                  <div className="table-wrapper">
-                    <table className="styled-table">
-                      <thead>
-                        <tr>
-                          <th>Sl.No</th>
-                          <th>School</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {notReported.schools.length ? notReported.schools.map((s, i) => (
-                          <tr key={s._id || `${s.schoolName}_${i}`}>
-                            <td>{i + 1}</td>
-                            <td>{s.schoolName}</td>
-                          </tr>
-                        )) : (
-                          <tr><td colSpan={2} style={{ textAlign: 'center' }}>No schools</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+              {/* Right: Event-wise Report */}
+              <div className="card" style={{ display: 'grid', gap: 8 }}>
+                <div className="card-header" style={{ alignItems: 'center' }}>
+                  <h3 style={{ margin: 0 }}>Event-wise Report</h3>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button className="btn ghost" onClick={() => setShowEventWise(v => !v)}>{showEventWise ? 'Hide' : 'Show'}</button>
+                    <button className="btn" onClick={() => {
+                      const lines = [];
+                      lines.push(["Scope","Event","Nomination","Present"].join(","));
+                      const toLine = (scope, r) => [scope, r.title, String(r.nomination||0), String(r.present||0)].map(v=>(/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v))).join(",");
+                      eventAgg.school.forEach(r=>lines.push(toLine('School', r)));
+                      eventAgg.district.forEach(r=>lines.push(toLine('District', r)));
+                      const blob = new Blob([lines.join("\n")], { type: 'text/csv;charset=utf-8;' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url; a.download = 'event_wise_report.csv'; a.click(); URL.revokeObjectURL(url);
+                    }}>CSV</button>
+                    <button className="btn" onClick={async() => {
+                      try {
+                        const { default: jsPDF } = await import('jspdf');
+                        const autoTable = (await import('jspdf-autotable')).default;
+                        const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+                        doc.setFontSize(14);
+                        doc.text('Event-wise Report', 40, 32);
+                        const head = [['Event','Nomination','Present']];
+                        const toBody = (arr) => arr.map(r => [r.title, String(r.nomination||0), String(r.present||0)]);
+                        autoTable(doc, { head, body: toBody(eventAgg.school), startY: 48, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } , didDrawPage: (data)=>{ doc.setFontSize(12); doc.text('School Events', 40, 44);} });
+                        const afterY = doc.lastAutoTable.finalY + 18;
+                        doc.setFontSize(12); doc.text('District Events', 40, afterY);
+                        autoTable(doc, { head, body: toBody(eventAgg.district), startY: afterY + 6, headStyles: { fillColor: [16,185,129] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
+                        doc.save('event_wise_report.pdf');
+                      } catch(e) {
+                        alert('Please install jspdf and jspdf-autotable to export PDF');
+                      }
+                    }}>PDF</button>
                   </div>
                 </div>
-              )}
-
-              {showDistrictsNotReported && (
-                <div style={{ marginTop: 12 }}>
-                  <div className="table-wrapper">
-                    <table className="styled-table">
-                      <thead>
-                        <tr>
-                          <th>Sl.No</th>
-                          <th>District</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {notReported.districts.length ? notReported.districts.map((d, i) => (
-                          <tr key={d._id}>
-                            <td>{i + 1}</td>
-                            <td>{d.districtName}</td>
+                {showEventWise && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0' }}>School Events</h4>
+                    <div className="table-wrapper">
+                      <table className="styled-table">
+                        <thead>
+                          <tr>
+                            <th>Event</th>
+                            <th>Nomination</th>
+                            <th>Present</th>
                           </tr>
-                        )) : (
-                          <tr><td colSpan={2} style={{ textAlign: 'center' }}>No districts</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {(eventAgg.school || []).length ? (eventAgg.school).map((r, i) => (
+                            <tr key={`s_${r.eventId}_${i}`}>
+                              <td>{r.title}</td>
+                              <td>{r.nomination || 0}</td>
+                              <td>{r.present || 0}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={4} style={{ textAlign: 'center' }}>No data</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 8px 0' }}>District Events</h4>
+                    <div className="table-wrapper">
+                      <table className="styled-table">
+                        <thead>
+                          <tr>
+                            <th>Event</th>
+                            <th>Nomination</th>
+                            <th>Present</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(eventAgg.district || []).length ? (eventAgg.district).map((r, i) => (
+                            <tr key={`d_${r.eventId}_${i}`}>
+                              <td>{r.title}</td>
+                              <td>{r.nomination || 0}</td>
+                              <td>{r.present || 0}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={4} style={{ textAlign: 'center' }}>No data</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="card">
