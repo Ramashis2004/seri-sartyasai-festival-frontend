@@ -498,14 +498,14 @@ export default function DistrictDashboard() {
   };
 
   const [teachers, setTeachers] = useState([]);
-  const [teachersGrid, setTeachersGrid] = useState([{ member: "", name: "", mobile: "", gender: "" }]);
+  const [teachersGrid, setTeachersGrid] = useState([{ member: "secretary_manager", name: "", mobile: "", gender: "" }]);
   const [teachersDirty, setTeachersDirty] = useState(false);
   const [tFormKey, setTFormKey] = useState(0);
   const [showTeacherPreview, setShowTeacherPreview] = useState(false);
   const [savingTeachers, setSavingTeachers] = useState(false);
 
   const presetMembers = [
-    "",
+    "secretary_manager",
     "principal",
     "teacher",
     "guru",
@@ -548,10 +548,10 @@ export default function DistrictDashboard() {
     const rows = [];
 
     // Insert secretary_manager first (if exists)
-    const sec = list.find(t => (t.member || "").toLowerCase() === "");
+    const sec = list.find(t => (t.member || "").toLowerCase() === "secretary_manager");
     if (sec) {
       rows.push({
-        member: "",
+        member: "secretary_manager",
         name: sec.name || "",
         mobile: sec.mobile || "",
         gender: (sec.gender || "").toLowerCase(),
@@ -561,7 +561,7 @@ export default function DistrictDashboard() {
 
     // Others
     list
-      .filter(t => (t.member || "").toLowerCase() !== "")
+      .filter(t => (t.member || "").toLowerCase() !== "secretary_manager")
       .forEach(t => {
         const rawMember = t.member || "mc_member";
         const code = rawMember.toLowerCase();
@@ -579,7 +579,7 @@ export default function DistrictDashboard() {
 
     // Ensure at least one row exists
     if (!rows.length) {
-      rows.push({ member: "", name: "", mobile: "", gender: "" });
+      rows.push({ member: "secretary_manager", name: "", mobile: "", gender: "" });
     }
 
     setTeachersGrid(rows);
@@ -880,7 +880,7 @@ export default function DistrictDashboard() {
             <Button onClick={addTeacherRow} style={{ backgroundColor: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0', '&:hover': { backgroundColor: '#dcfce7' }, width: { xs: '100%', sm: 'auto' } }}>+ Add New </Button>
           </div>
           <div style={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 10 }}>
-            <Button onClick={() => { setTeachersGrid([{ member: "", name: "", mobile: "", gender: "" }]); setTFormKey(prev => prev + 1); try { localStorage.removeItem(LS_TEACHERS_KEY); } catch(_) {} }} style={{ borderColor: '#e2e8f0', '&:hover': { backgroundColor: '#f8fafc' } }}>Reset All</Button>
+            <Button onClick={() => { setTeachersGrid([{ member: "secretary_manager", name: "", mobile: "", gender: "" }]); setTFormKey(prev => prev + 1); try { localStorage.removeItem(LS_TEACHERS_KEY); } catch(_) {} }} style={{ borderColor: '#e2e8f0', '&:hover': { backgroundColor: '#f8fafc' } }}>Reset All</Button>
             <Button onClick={handlePreviewTeachers} style={{ backgroundColor: "#2563eb", color: "#fff", borderColor: "#2563eb", '&:hover': { backgroundColor: '#1d4ed8', borderColor: '#1d4ed8' } }}>Preview & Submit</Button>
           </div>
         </div>
