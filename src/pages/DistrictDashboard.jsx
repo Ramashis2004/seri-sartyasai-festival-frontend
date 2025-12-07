@@ -604,7 +604,7 @@ export default function DistrictDashboard() {
   };
 
   const addTeacherRow = () => {
-     setTeachersGrid((prev) => [...prev, { member: "dist_president", name: "", mobile: "", gender: "" }]);
+    setTeachersGrid((prev) => [...prev, { member: "dist_president", name: "", mobile: "", gender: "" }]);
     setTeachersDirty(true);
   };
   const removeTeacherRow = async(idx) => {
@@ -665,11 +665,13 @@ export default function DistrictDashboard() {
         });
         await Promise.all(apiCalls);
       } catch (e) {
-        Swal.showValidationMessage("Failed to save. Please try again.");
-        throw e;
+   const msg = e?.response?.data?.message || "Failed to save. Please try again.";
+    Swal.showValidationMessage(msg);    // 🔥 Show actual API error
+    setSavingTeachers(false);             // 🛑 stop loader
+    return false; 
       } finally {
-        setSavingTeachers(false);
-      }
+      setSavingTeachers(false);
+    }
     },
   });
 
@@ -834,6 +836,7 @@ export default function DistrictDashboard() {
                         onChange={(e) => setTGrid(idx, "member", e.target.value)}
                         style={{ width: '100%', minWidth: '100%' }}
                       >
+                        
                         <option value="dist_president">Dist President</option>
                         <option value="dist_edu_coordinator_gents">Edu-Coord (Gents)</option>
                         <option value="dist_edu_coordinator_ladies">Edu-Coord (Ladies)</option>
