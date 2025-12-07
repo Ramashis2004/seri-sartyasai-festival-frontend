@@ -534,14 +534,14 @@ export default function ITAdminOverview() {
                     <button className="btn ghost" onClick={() => setShowEventWise(v => !v)}>{showEventWise ? 'Hide' : 'Show'}</button>
                     <button className="btn" onClick={() => {
                       const lines = [];
-                      lines.push(["Scope","Event","Audience","Nomination","Present"].join(","));
+                      lines.push(["Sl.No","Scope","Event","Audience","Nomination","Present"].join(","));
                       const esc = (v) => (/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v));
-                      const toLine = (scope, r) => [scope, r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)].map(esc).join(",");
+                      const toLine = (i, scope, r) => [String(i+1), scope, r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)].map(esc).join(",");
                       const rank = (aud) => aud === 'Senior' ? 0 : (aud === 'Junior' ? 1 : 2);
                       const schoolRows = (eventAgg.school || []).slice().sort((a,b)=> (rank(a.audience)-rank(b.audience)) || a.title.localeCompare(b.title));
                       const districtRows = (eventAgg.district || []).slice().sort((a,b)=> a.title.localeCompare(b.title));
-                      schoolRows.forEach(r=>lines.push(toLine('School', r)));
-                      districtRows.forEach(r=>lines.push(toLine('District', r)));
+                      schoolRows.forEach((r, i)=>lines.push(toLine(i, 'School', r)));
+                      districtRows.forEach((r, i)=>lines.push(toLine(i, 'District', r)));
                       const blob = new Blob([lines.join("\n")], { type: 'text/csv;charset=utf-8;' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
@@ -554,16 +554,16 @@ export default function ITAdminOverview() {
                         const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
                         doc.setFontSize(14);
                         doc.text('Event-wise Report', 40, 32);
-                        const headSchool = [['Event','Audience','Nomination','Present']];
+                        const headSchool = [['Sl.No','Event','Audience','Nomination','Present']];
                         const rank = (aud) => aud === 'Senior' ? 0 : (aud === 'Junior' ? 1 : 2);
                         const schoolSorted = (eventAgg.school || []).slice().sort((a,b)=> (rank(a.audience)-rank(b.audience)) || a.title.localeCompare(b.title));
-                        const toBodySchool = (arr) => arr.map(r => [r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)]);
+                        const toBodySchool = (arr) => arr.map((r, i) => [String(i+1), r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)]);
                         autoTable(doc, { head: headSchool, body: toBodySchool(schoolSorted), startY: 48, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } , didDrawPage: (data)=>{ doc.setFontSize(12); doc.text('School Events', 40, 44);} });
                         const afterY = doc.lastAutoTable.finalY + 18;
                         doc.setFontSize(12); doc.text('District Events', 40, afterY);
-                        const headDistrict = [['Event','Nomination','Present']];
+                        const headDistrict = [['Sl.No','Event','Nomination','Present']];
                         const districtSorted = (eventAgg.district || []).slice().sort((a,b)=> a.title.localeCompare(b.title));
-                        const toBodyDistrict = (arr) => arr.map(r => [r.title, String(r.nomination||0), String(r.present||0)]);
+                        const toBodyDistrict = (arr) => arr.map((r, i) => [String(i+1), r.title, String(r.nomination||0), String(r.present||0)]);
                         autoTable(doc, { head: headDistrict, body: toBodyDistrict(districtSorted), startY: afterY + 6, headStyles: { fillColor: [16,185,129] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
                         doc.save('event_wise_report.pdf');
                       } catch(e) {
@@ -580,6 +580,7 @@ export default function ITAdminOverview() {
                       <table className="styled-table">
                         <thead>
                           <tr>
+                            <th>Sl.No</th>
                             <th>Event</th>
                             <th>Audience</th>
                             <th>Nomination</th>
@@ -589,13 +590,14 @@ export default function ITAdminOverview() {
                         <tbody>
                           {(eventAgg.school || []).length ? (eventAgg.school).map((r, i) => (
                             <tr key={`s_${r.eventId}_${i}`}>
+                              <td>{i + 1}</td>
                               <td>{r.title}</td>
                               <td>{r.audience || '-'}</td>
                               <td>{r.nomination || 0}</td>
                               <td>{r.present || 0}</td>
                             </tr>
                           )) : (
-                            <tr><td colSpan={4} style={{ textAlign: 'center' }}>No data</td></tr>
+                            <tr><td colSpan={5} style={{ textAlign: 'center' }}>No data</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -607,6 +609,7 @@ export default function ITAdminOverview() {
                       <table className="styled-table">
                         <thead>
                           <tr>
+                            <th>Sl.No</th>
                             <th>Event</th>
                             <th>Nomination</th>
                             <th>Present</th>
@@ -615,6 +618,7 @@ export default function ITAdminOverview() {
                         <tbody>
                           {(eventAgg.district || []).length ? (eventAgg.district).map((r, i) => (
                             <tr key={`d_${r.eventId}_${i}`}>
+                              <td>{i + 1}</td>
                               <td>{r.title}</td>
                               <td>{r.nomination || 0}</td>
                               <td>{r.present || 0}</td>
