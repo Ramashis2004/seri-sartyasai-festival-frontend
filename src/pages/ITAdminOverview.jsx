@@ -2,7 +2,7 @@ import React from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useEffect, useState, useMemo } from "react";
 import districtApi from "../api/districtApi";
-import { itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview, itListParticipants } from "../api/itAdminApi";
+import { itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview, itListParticipants, itGetParticipantsByDistrictReport, itGetTeachersByDistrictReport } from "../api/itAdminApi";
 import "../styles/itAdminOverview.css";
 
 export default function ITAdminOverview() {
@@ -28,6 +28,26 @@ export default function ITAdminOverview() {
   // Event-wise aggregation
   const [eventAgg, setEventAgg] = useState({ school: [], district: [] });
   const [showEventWise, setShowEventWise] = useState(false);
+
+  // District-wise totals report (middle card)
+  const [showDistWise, setShowDistWise] = useState(false);
+  const [distScope, setDistScope] = useState("school"); // 'school' | 'district'
+  const [distFrozen, setDistFrozen] = useState(true);
+  const [distRows, setDistRows] = useState([]); // merged rows with students + roles
+  const [distRoles, setDistRoles] = useState([]); // dynamic teacher roles
+  const [loadingDist, setLoadingDist] = useState(false);
+  const memberLabels = {
+    dist_president: "Dist President",
+    dist_edu_coordinator_gents: "Edu-Coord (Gents)",
+    dist_edu_coordinator_ladies: "Edu-Coord (Ladies)",
+    dist_monitoring_committee: "Monitoring Committee",
+    guru: "Guru",
+    parents: "Parents",
+    mc_member: "MC Member",
+    teacher: "Teacher",
+    principal: "Principal",
+    other: "Other",
+  };
 
   const [showSchoolsNotReported, setShowSchoolsNotReported] = useState(false);
   const [showDistrictsNotReported, setShowDistrictsNotReported] = useState(false);
@@ -116,6 +136,64 @@ export default function ITAdminOverview() {
   };
 
   useEffect(() => { load(); }, [params]);
+
+  const loadDistWise = async () => {
+    try {
+      setLoadingDist(true);
+      const [pData, tData] = await Promise.all([
+        itGetParticipantsByDistrictReport({ districtId, eventId, scope: distScope, frozen: String(distFrozen) }).catch(() => ({ rows: [], grandTotal: {} })),
+        itGetTeachersByDistrictReport({ districtId, eventId, scope: distScope, frozen: String(distFrozen) }).catch(() => ({ roles: [], rows: [], grandTotals: {} })),
+      ]);
+      const pRows = Array.isArray(pData?.rows) ? pData.rows : [];
+      const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
+      const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
+
+      // Merge by districtId
+      const map = new Map();
+      pRows.forEach((r) => {
+        const key = String(r.districtId);
+        map.set(key, {
+          key,
+          districtName: r.districtName || "-",
+          boys: Number(r.boy || 0),
+          girls: Number(r.girl || 0),
+          studentsTotal: Number(r.total || 0),
+          byRole: {},
+          rolesTotal: 0,
+        });
+      });
+      tRows.forEach((r) => {
+        const key = String(r.districtId);
+        const cur = map.get(key) || { key, districtName: r.districtName || "-", boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+        cur.byRole = r.byRole || {};
+        cur.rolesTotal = Number(r.total || 0);
+        map.set(key, cur);
+      });
+      const rows = Array.from(map.values()).sort((a, b) => a.districtName.localeCompare(b.districtName));
+      setDistRoles(tRoles);
+      setDistRows(rows);
+    } finally {
+      setLoadingDist(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showDistWise) loadDistWise();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDistWise, distScope, distFrozen, params]);
+
+  const distGrand = useMemo(() => {
+    const res = { boys: 0, girls: 0, roles: {}, total: 0 };
+    (distRoles || []).forEach(k => { res.roles[k] = 0; });
+    (distRows || []).forEach(r => {
+      res.boys += Number(r.boys || 0);
+      res.girls += Number(r.girls || 0);
+      (distRoles || []).forEach(k => { res.roles[k] += Number(r.byRole?.[k] || 0); });
+    });
+    const rolesSum = (distRoles || []).reduce((a,k)=> a + Number(res.roles[k] || 0), 0);
+    res.total = Number(res.boys || 0) + Number(res.girls || 0) + rolesSum;
+    return res;
+  }, [distRows, distRoles]);
 
   const goToParticipants = (extra = {}) => {
     const sp = new URLSearchParams();
@@ -522,6 +600,109 @@ export default function ITAdminOverview() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Middle: District-wise Totals */}
+              <div className="card" style={{ display: 'grid', gap: 8 }}>
+                <div className="card-header" style={{ alignItems: 'center' }}>
+                  <h3 style={{ margin: 0 }}>Total Participant Count (District-wise)</h3>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <select value={distScope} onChange={(e) => setDistScope(e.target.value)}>
+                      <option value="school">School</option>
+                      <option value="district">District</option>
+                    </select>
+                    <select value={String(distFrozen)} onChange={(e) => setDistFrozen(e.target.value === 'true')}>
+                      <option value="true">Frozen</option>
+                      <option value="false">Present</option>
+                    </select>
+                    <button className="btn ghost" onClick={() => setShowDistWise(v => !v)}>{showDistWise ? 'Hide' : 'Show'}</button>
+                    <button className="btn" onClick={() => {
+                      const lines = [];
+                      const header = ["Sl.No","District","Boys","Girls", ...(distRoles||[]).map(k => memberLabels[k] || k), "Grand Total"];
+                      lines.push(header.join(","));
+                      const esc = (v) => (/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v));
+                      (distRows || []).forEach((r, i) => {
+                        const roleVals = (distRoles||[]).map(k => Number(r.byRole?.[k] || 0));
+                        const sumRoles = roleVals.reduce((a,b)=>a+b,0);
+                        const row = [String(i+1), r.districtName, String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
+                        lines.push(row.map(esc).join(","));
+                      });
+                      const blob = new Blob([lines.join("\n")], { type: 'text/csv;charset=utf-8;' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url; a.download = 'district_wise_totals.csv'; a.click(); URL.revokeObjectURL(url);
+                    }}>CSV</button>
+                    <button className="btn" onClick={async () => {
+                      try {
+                        const { default: jsPDF } = await import('jspdf');
+                        const autoTable = (await import('jspdf-autotable')).default;
+                        const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+                        doc.setFontSize(14);
+                        doc.text('District-wise Totals', 40, 32);
+                        const head = [["Sl.No","District","Boys","Girls", ...(distRoles||[]).map(k => memberLabels[k] || k), "Grand Total"]];
+                        const body = (distRows || []).map((r, i) => {
+                          const roleVals = (distRoles||[]).map(k => Number(r.byRole?.[k] || 0));
+                          const sumRoles = roleVals.reduce((a,b)=>a+b,0);
+                          return [String(i+1), r.districtName, String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
+                        });
+                        autoTable(doc, { head: head, body: body, startY: 48, headStyles: { fillColor: [99,102,241] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
+                        doc.save('district_wise_totals.pdf');
+                      } catch(e) {
+                        alert('Please install jspdf and jspdf-autotable to export PDF');
+                      }
+                    }}>PDF</button>
+                  </div>
+                </div>
+                {showDistWise && (
+                  <div className="table-wrapper">
+                    {loadingDist ? (
+                      <div style={{ padding: 12 }}>Loading...</div>
+                    ) : (
+                      <table className="styled-table">
+                        <thead>
+                          <tr>
+                            <th>Sl.No</th>
+                            <th>District</th>
+                            <th>Boys</th>
+                            <th>Girls</th>
+                            {(distRoles || []).map((k) => (
+                              <th key={k}>{memberLabels[k] || k}</th>
+                            ))}
+                            <th>Grand Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(distRows || []).length ? (distRows || []).map((r, i) => {
+                            const roleVals = (distRoles||[]).map(k => Number(r.byRole?.[k] || 0));
+                            const sumRoles = roleVals.reduce((a,b)=>a+b,0);
+                            return (
+                              <tr key={r.key || r.districtName}>
+                                <td>{i + 1}</td>
+                                <td>{r.districtName}</td>
+                                <td>{r.boys || 0}</td>
+                                <td>{r.girls || 0}</td>
+                                {roleVals.map((v, idx) => (<td key={String(idx)}>{v}</td>))}
+                                <td>{Number(r.studentsTotal || 0) + sumRoles}</td>
+                              </tr>
+                            );
+                          }) : (
+                            <tr><td colSpan={5 + (distRoles ? distRoles.length : 0)} style={{ textAlign: 'center' }}>No data</td></tr>
+                          )}
+                          {(distRows || []).length ? (
+                            <tr>
+                              <td><b>Grand Total</b></td>
+                              <td></td>
+                              <td><b>{distGrand.boys}</b></td>
+                              <td><b>{distGrand.girls}</b></td>
+                              {(distRoles || []).map((k) => (<td key={k}><b>{distGrand.roles?.[k] || 0}</b></td>))}
+                              <td><b>{distGrand.total}</b></td>
+                            </tr>
+                          ) : null}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 )}
               </div>
