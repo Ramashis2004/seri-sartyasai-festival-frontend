@@ -488,13 +488,13 @@ export default function ITAdminOverview() {
                     <span className="dot violet" />
                     <div style={{ color: '#475569', fontWeight: 600 }}>Reported</div>
                   </div>
-                  {/* <button className="btn ghost" onClick={() => {
+                  <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('present','true');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View All</button> */}
+                  }}>View All</button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
