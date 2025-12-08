@@ -33,6 +33,7 @@ export default function ITAdminOverview() {
   const [showDistWise, setShowDistWise] = useState(false);
   const [distScope, setDistScope] = useState("school"); // 'school' | 'district'
   const [distFrozen, setDistFrozen] = useState(true);
+  const [distAll, setDistAll] = useState(false); // when true, ignore frozen/present and show all nominations
   const [distRows, setDistRows] = useState([]); // merged rows with students + roles
   const [distRoles, setDistRoles] = useState([]); // dynamic teacher roles
   const [loadingDist, setLoadingDist] = useState(false);
@@ -141,66 +142,138 @@ export default function ITAdminOverview() {
     try {
       setLoadingDist(true);
       if (distScope === 'district') {
-        const [pData, tData] = await Promise.all([
-          itGetParticipantsByDistrictReport({ districtId, eventId, scope: 'district', frozen: String(distFrozen) }).catch(() => ({ rows: [], grandTotal: {} })),
-          itGetTeachersByDistrictReport({ districtId, eventId, scope: 'district', frozen: String(distFrozen) }).catch(() => ({ roles: [], rows: [], grandTotals: {} })),
-        ]);
-        const pRows = Array.isArray(pData?.rows) ? pData.rows : [];
-        const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
-        const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
-        const map = new Map();
-        pRows.forEach((r) => {
-          const key = String(r.districtId);
-          map.set(key, { key, districtName: r.districtName || '-', schoolName: '', boys: Number(r.boy||0), girls: Number(r.girl||0), studentsTotal: Number(r.total||0), byRole: {}, rolesTotal: 0 });
-        });
-        tRows.forEach((r) => {
-          const key = String(r.districtId);
-          const cur = map.get(key) || { key, districtName: r.districtName || '-', schoolName: '', boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
-          cur.byRole = r.byRole || {};
-          cur.rolesTotal = Number(r.total || 0);
-          map.set(key, cur);
-        });
-        const rows = Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName));
-        setDistRoles(tRoles);
-        setDistRows(rows);
+        if (distAll) {
+          const [pTrue, pFalse, tTrue, tFalse] = await Promise.all([
+            itGetParticipantsByDistrictReport({ districtId, eventId, scope: 'district', frozen: 'true' }).catch(() => ({ rows: [] })),
+            itGetParticipantsByDistrictReport({ districtId, eventId, scope: 'district', frozen: 'false' }).catch(() => ({ rows: [] })),
+            itGetTeachersByDistrictReport({ districtId, eventId, scope: 'district', frozen: 'true' }).catch(() => ({ roles: [], rows: [] })),
+            itGetTeachersByDistrictReport({ districtId, eventId, scope: 'district', frozen: 'false' }).catch(() => ({ roles: [], rows: [] })),
+          ]);
+          const pRows = [...(Array.isArray(pTrue?.rows)?pTrue.rows:[]), ...(Array.isArray(pFalse?.rows)?pFalse.rows:[])];
+          const tRoles = Array.from(new Set([...(Array.isArray(tTrue?.roles)?tTrue.roles:[]), ...(Array.isArray(tFalse?.roles)?tFalse.roles:[])]));
+          const tRows = [...(Array.isArray(tTrue?.rows)?tTrue.rows:[]), ...(Array.isArray(tFalse?.rows)?tFalse.rows:[])];
+          const map = new Map();
+          pRows.forEach((r) => {
+            const key = String(r.districtId);
+            const cur = map.get(key) || { key, districtName: r.districtName || '-', schoolName: '', boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            cur.boys += Number(r.boy || 0);
+            cur.girls += Number(r.girl || 0);
+            cur.studentsTotal += Number(r.total || 0);
+            map.set(key, cur);
+          });
+          tRows.forEach((r) => {
+            const key = String(r.districtId);
+            const cur = map.get(key) || { key, districtName: r.districtName || '-', schoolName: '', boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            const byRole = r.byRole || {};
+            Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
+            cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+            map.set(key, cur);
+          });
+          const rows = Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName));
+          setDistRoles(tRoles);
+          setDistRows(rows);
+        } else {
+          const [pData, tData] = await Promise.all([
+            itGetParticipantsByDistrictReport({ districtId, eventId, scope: 'district', frozen: String(distFrozen) }).catch(() => ({ rows: [], grandTotal: {} })),
+            itGetTeachersByDistrictReport({ districtId, eventId, scope: 'district', frozen: String(distFrozen) }).catch(() => ({ roles: [], rows: [], grandTotals: {} })),
+          ]);
+          const pRows = Array.isArray(pData?.rows) ? pData.rows : [];
+          const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
+          const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
+          const map = new Map();
+          pRows.forEach((r) => {
+            const key = String(r.districtId);
+            map.set(key, { key, districtName: r.districtName || '-', schoolName: '', boys: Number(r.boy||0), girls: Number(r.girl||0), studentsTotal: Number(r.total||0), byRole: {}, rolesTotal: 0 });
+          });
+          tRows.forEach((r) => {
+            const key = String(r.districtId);
+            const cur = map.get(key) || { key, districtName: r.districtName || '-', schoolName: '', boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            cur.byRole = r.byRole || {};
+            cur.rolesTotal = Number(r.total || 0);
+            map.set(key, cur);
+          });
+          const rows = Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName));
+          setDistRoles(tRoles);
+          setDistRows(rows);
+        }
       } else {
-        // scope === 'school': aggregate by district + school
-        const [pList, tData] = await Promise.all([
-          itListParticipants({ scope: 'school', districtId, eventId, frozen: String(distFrozen) }).catch(() => []),
-          itGetTeachersBySchoolReport({ districtId, eventId, frozen: String(distFrozen) }).catch(() => ({ roles: [], rows: [], grandTotals: {} })),
-        ]);
-        const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
-        const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
-        const map = new Map();
-        // participants aggregation by district+school
-        (Array.isArray(pList) ? pList : []).forEach((p) => {
-          const dId = String(p.districtId || '');
-          const dName = p.districtName || '-';
-          const sName = p.schoolName || '-';
-          if (!dId || !sName) return;
-          const key = `${dId}__${sName}`;
-          const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
-          const isBoy = String(p.gender || '').toLowerCase() === 'boy';
-          const isGirl = String(p.gender || '').toLowerCase() === 'girl';
-          cur.boys += isBoy ? 1 : 0;
-          cur.girls += isGirl ? 1 : 0;
-          cur.studentsTotal += 1;
-          map.set(key, cur);
-        });
-        // merge teacher roles by school
-        tRows.forEach((r) => {
-          const dId = String(r.districtId || '');
-          const sName = r.schoolName || '-';
-          if (!dId || !sName) return;
-          const key = `${dId}__${sName}`;
-          const cur = map.get(key) || { key, districtId: dId, districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
-          cur.byRole = r.byRole || {};
-          cur.rolesTotal = Number(r.total || 0);
-          map.set(key, cur);
-        });
-        const rows = Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
-        setDistRoles(tRoles);
-        setDistRows(rows);
+        if (distAll) {
+          const [pTrue, pFalse, tTrue, tFalse] = await Promise.all([
+            itListParticipants({ scope: 'school', districtId, eventId, frozen: 'true' }).catch(() => []),
+            itListParticipants({ scope: 'school', districtId, eventId, frozen: 'false' }).catch(() => []),
+            itGetTeachersBySchoolReport({ districtId, eventId, frozen: 'true' }).catch(() => ({ roles: [], rows: [] })),
+            itGetTeachersBySchoolReport({ districtId, eventId, frozen: 'false' }).catch(() => ({ roles: [], rows: [] })),
+          ]);
+          const pList = [...(Array.isArray(pTrue)?pTrue:[]), ...(Array.isArray(pFalse)?pFalse:[])];
+          const tRoles = Array.from(new Set([...(Array.isArray(tTrue?.roles)?tTrue.roles:[]), ...(Array.isArray(tFalse?.roles)?tFalse.roles:[])]));
+          const tRows = [...(Array.isArray(tTrue?.rows)?tTrue.rows:[]), ...(Array.isArray(tFalse?.rows)?tFalse.rows:[])];
+          const map = new Map();
+          (Array.isArray(pList) ? pList : []).forEach((p) => {
+            const dId = String(p.districtId || '');
+            const dName = p.districtName || '-';
+            const sName = p.schoolName || '-';
+            if (!dId || !sName) return;
+            const key = `${dId}__${sName}`;
+            const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            const isBoy = String(p.gender || '').toLowerCase() === 'boy';
+            const isGirl = String(p.gender || '').toLowerCase() === 'girl';
+            cur.boys += isBoy ? 1 : 0;
+            cur.girls += isGirl ? 1 : 0;
+            cur.studentsTotal += 1;
+            map.set(key, cur);
+          });
+          tRows.forEach((r) => {
+            const dId = String(r.districtId || '');
+            const sName = r.schoolName || '-';
+            if (!dId || !sName) return;
+            const key = `${dId}__${sName}`;
+            const cur = map.get(key) || { key, districtId: dId, districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            const byRole = r.byRole || {};
+            Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
+            cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+            map.set(key, cur);
+          });
+          const rows = Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
+          setDistRoles(tRoles);
+          setDistRows(rows);
+        } else {
+          const [pList, tData] = await Promise.all([
+            itListParticipants({ scope: 'school', districtId, eventId, frozen: String(distFrozen) }).catch(() => []),
+            itGetTeachersBySchoolReport({ districtId, eventId, frozen: String(distFrozen) }).catch(() => ({ roles: [], rows: [], grandTotals: {} })),
+          ]);
+          const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
+          const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
+          const map = new Map();
+          // participants aggregation by district+school
+          (Array.isArray(pList) ? pList : []).forEach((p) => {
+            const dId = String(p.districtId || '');
+            const dName = p.districtName || '-';
+            const sName = p.schoolName || '-';
+            if (!dId || !sName) return;
+            const key = `${dId}__${sName}`;
+            const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            const isBoy = String(p.gender || '').toLowerCase() === 'boy';
+            const isGirl = String(p.gender || '').toLowerCase() === 'girl';
+            cur.boys += isBoy ? 1 : 0;
+            cur.girls += isGirl ? 1 : 0;
+            cur.studentsTotal += 1;
+            map.set(key, cur);
+          });
+          // merge teacher roles by school
+          tRows.forEach((r) => {
+            const dId = String(r.districtId || '');
+            const sName = r.schoolName || '-';
+            if (!dId || !sName) return;
+            const key = `${dId}__${sName}`;
+            const cur = map.get(key) || { key, districtId: dId, districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            cur.byRole = r.byRole || {};
+            cur.rolesTotal = Number(r.total || 0);
+            map.set(key, cur);
+          });
+          const rows = Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
+          setDistRoles(tRoles);
+          setDistRows(rows);
+        }
       }
     } finally {
       setLoadingDist(false);
@@ -210,7 +283,7 @@ export default function ITAdminOverview() {
   useEffect(() => {
     if (showDistWise) loadDistWise();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDistWise, distScope, distFrozen, params]);
+  }, [showDistWise, distScope, distFrozen, distAll, params]);
 
   const distGrand = useMemo(() => {
     const res = { boys: 0, girls: 0, roles: {}, total: 0 };
@@ -647,7 +720,8 @@ export default function ITAdminOverview() {
                       <option value="true">Frozen</option>
                       <option value="false">Present</option>
                     </select>
-                    <button className="btn ghost" onClick={() => setShowDistWise(v => !v)}>{showDistWise ? 'Hide' : 'Show'}</button>
+                    <button className="btn ghost" onClick={() => { setDistAll(false); setShowDistWise(v => !v); }}>{showDistWise ? 'Hide' : 'Show'}</button>
+                    <button className="btn ghost" onClick={() => { setDistAll(true); setShowDistWise(true); }}>Show All</button>
                     <button className="btn" onClick={() => {
                       const lines = [];
                       const header = ["Sl.No","District", ...(distScope==='school'?['School']:[]), "Boys","Girls", ...(distRoles||[]).map(k => memberLabels[k] || k), "Grand Total"];
