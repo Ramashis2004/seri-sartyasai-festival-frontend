@@ -890,13 +890,21 @@ export default function ITAdminOverview() {
                         </tr>
                       </thead>
                       <tbody>
-                        {studentsYet.districtWise.length ? studentsYet.districtWise.map((r, i) => (
-                          <tr key={r.districtId || i}>
-                            <td>{i + 1}</td>
-                            <td>{r.districtName || '-'}</td>
-                            <td>{r.count}</td>
-                          </tr>
-                        )) : (
+                        {studentsYet.districtWise.length ? studentsYet.districtWise
+                          .filter((r) => {
+                            const name = String(r.districtName || '').trim();
+                            const hasDistrict = !!r.districtId && name && name !== '-';
+                            const isSchoolRelated = !!r.schoolName || String(r.scope || '').toLowerCase() === 'school';
+                            const hasCount = Number(r.count || 0) > 0;
+                            return hasDistrict && !isSchoolRelated && hasCount;
+                          })
+                          .map((r, idx, arr) => (
+                            <tr key={r.districtId || idx}>
+                              <td>{idx + 1}</td>
+                              <td>{r.districtName}</td>
+                              <td>{r.count}</td>
+                            </tr>
+                          )) : (
                           <tr><td colSpan={3} style={{ textAlign: 'center' }}>No data</td></tr>
                         )}
                       </tbody>
