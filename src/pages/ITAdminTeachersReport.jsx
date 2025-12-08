@@ -19,7 +19,8 @@ export default function ITAdminTeachersReport() {
   parents: "Parents",
   mc_member:"MC Member",
   teacher:"Teacher",
-  principal:"Principal"
+  principal:"Principal",
+  "secretary_manager":"Secretary Manager"
 };
 
   const spInit = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -52,7 +53,7 @@ export default function ITAdminTeachersReport() {
   useEffect(() => { load(); }, []);
 
   const toCSV = () => {
-    const header = ["District", ...roles, "Grand Total"];
+    const header = ["District", ...roles.map(role => memberLabels[role] || role), "Grand Total"];
     const body = rows.map(r => [r.districtName, ...roles.map(k => r.byRole[k] || 0), r.total]);
     const foot = ["Grand Total", ...roles.map(k => grand[k] || 0), grand.total || 0];
     const lines = [header, ...body, foot].map(arr => arr.join(","));
@@ -70,7 +71,7 @@ export default function ITAdminTeachersReport() {
       const { default: jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-      const headers = ["District", ...roles, "Grand Total"];
+      const headers = ["District", ...roles.map(role => memberLabels[role] || role), "Grand Total"];
       const body = rows.map(r => [r.districtName, ...roles.map(k => r.byRole[k] || 0), r.total]);
       const foot = ["Grand Total", ...roles.map(k => grand[k] || 0), grand.total || 0];
       doc.setFontSize(14);
@@ -94,7 +95,7 @@ export default function ITAdminTeachersReport() {
       const { saveAs } = await import("file-saver");
       const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, TextRun, AlignmentType } = docx;
 
-      const headerCells = ["District", ...roles, "Grand Total"].map(t => new TableCell({
+      const headerCells = ["District", ...roles.map(role => memberLabels[role] || role), "Grand Total"].map(t => new TableCell({
         width: { size: Math.max(10, Math.floor(100 / (roles.length + 2))), type: WidthType.PERCENTAGE },
         children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })], alignment: AlignmentType.CENTER })],
       }));

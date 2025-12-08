@@ -551,23 +551,23 @@ export default function ITAdminTeachers() {
   const toCSV = () => {
     const header = [
       "Sl. No",
+      "District",
+      "School",
       "Name",
       "Phone",
-      "Gender",
       "Role",
-      "School",
-      "District",
+      "Gender",
       "Present",
       "Frozen"
     ];
     const body = filtered.map((r, i) => [
       String(i + 1),
+      r.districtName || "",
+      r.schoolName || "",
       r.name || "",
       r.phone || "",
-      r.gender || "",
       getRoleText(r) || "",
-      r.schoolName || "",
-      r.districtName || "",
+      r.gender || "",
       r.present ? "Yes" : "No",
       r.frozen ? "Yes" : "No",
     ]);
@@ -590,24 +590,24 @@ export default function ITAdminTeachers() {
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const headers = [
-        "Sl. No",
-        "Name",
-        "Phone",
-        "Gender",
-        "Role",
-        "School",
-        "District",
-        "Present",
-        "Frozen",
+      "Sl. No",
+      "District",
+      "School",
+      "Name",
+      "Phone",
+      "Role",
+      "Gender",
+      "Present",
+      "Frozen"
       ];
       const body = filtered.map((r, i) => [
         String(i + 1),
+        r.districtName || "",
+        r.schoolName || "",
         r.name || "",
         r.phone || "",
-        r.gender || "",
         getRoleText(r) || "",
-        r.schoolName || "",
-        r.districtName || "",
+        r.gender || "",
         r.present ? "Yes" : "No",
         r.frozen ? "Yes" : "No",
       ]);

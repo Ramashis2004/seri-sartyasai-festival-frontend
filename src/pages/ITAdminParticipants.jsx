@@ -324,13 +324,13 @@ export default function ITAdminParticipants() {
     ];
     const body = filtered.map((r, i) => [
       String(i + 1),
+      r.districtName || "",
+      r.schoolName || "",
       r.name || "",
-      r.className || "",
       r.gender || "",
+      r.className || "",
       r.eventTitle || "",
       r.source === "school" ? (r.group || "-") : "-",
-      r.schoolName || "",
-      r.districtName || "",
       r.present ? "Yes" : "No",
       r.frozen ? "Yes" : "No",
     ]);
@@ -353,26 +353,26 @@ export default function ITAdminParticipants() {
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const headers = [
-        "Sl.No",
-        "Name",
-        "Class",
-        "Gender",
-        "Event",
-        "Group",
-        "School",
-        "District",
-        "Present",
-        "Frozen",
+      "Sl.No",
+      "District",
+      "School",
+      "Name",
+      "Gender",
+      "Class",
+      "Event",
+      "Group",
+      "Present",
+      "Frozen",
       ];
       const body = filtered.map((r, i) => [
         String(i + 1),
+        r.districtName || "",
+        r.schoolName || "",
         r.name || "",
-        r.className || "",
         r.gender || "",
+        r.className || "",
         r.eventTitle || "",
         r.source === "school" ? (r.group || "-") : "-",
-        r.schoolName || "",
-        r.districtName || "",
         r.present ? "Yes" : "No",
         r.frozen ? "Yes" : "No",
       ]);
@@ -398,7 +398,16 @@ export default function ITAdminParticipants() {
       const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, TextRun, AlignmentType } = docx;
 
       const headers = [
-        "Sl.No", "Name", "Class", "Gender", "Event", "Group", "School", "District", "Present", "Frozen"
+        "Sl.No",
+      "District",
+      "School",
+      "Name",
+      "Gender",
+      "Class",
+      "Event",
+      "Group",
+      "Present",
+      "Frozen",
       ];
       const headerCells = headers.map(t => new TableCell({
         width: { size: Math.max(10, Math.floor(100 / headers.length)), type: WidthType.PERCENTAGE },
@@ -408,13 +417,13 @@ export default function ITAdminParticipants() {
 
       const bodyRows = filtered.map((r, i) => new TableRow({ children: [
         new TableCell({ children: [new Paragraph(String(i + 1))] }),
+        new TableCell({ children: [new Paragraph(String(r.districtName || ""))] }),
+        new TableCell({ children: [new Paragraph(String(r.schoolName || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.name || ""))] }),
-        new TableCell({ children: [new Paragraph(String(r.className || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.gender || ""))] }),
+        new TableCell({ children: [new Paragraph(String(r.className || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.eventTitle || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.source === "school" ? (r.group || "-") : "-"))] }),
-        new TableCell({ children: [new Paragraph(String(r.schoolName || ""))] }),
-        new TableCell({ children: [new Paragraph(String(r.districtName || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.present ? "Yes" : "No"))] }),
         new TableCell({ children: [new Paragraph(String(r.frozen ? "Yes" : "No"))] }),
       ] }));

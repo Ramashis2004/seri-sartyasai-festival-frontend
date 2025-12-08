@@ -24,6 +24,7 @@ export default function ITAdminOverview() {
   const [teachers, setTeachers] = useState({ reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showStudentsYet, setShowStudentsYet] = useState(false);
 
   // Event-wise aggregation
   const [eventAgg, setEventAgg] = useState({ school: [], district: [] });
@@ -48,6 +49,7 @@ export default function ITAdminOverview() {
     teacher: "Teacher",
     principal: "Principal",
     other: "Other",
+    secretary_manager: "Secretary Manager"
   };
 
   const [showSchoolsNotReported, setShowSchoolsNotReported] = useState(false);
@@ -392,13 +394,13 @@ export default function ITAdminOverview() {
                     <span className="dot orange" />
                     <div style={{ color: '#475569', fontWeight: 600 }}>Total Students Reported</div>
                   </div>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('frozen','true');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
                 <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
                   const sp = new URLSearchParams();
@@ -422,14 +424,14 @@ export default function ITAdminOverview() {
                     <div style={{ color: '#475569', fontWeight: 600 }}>Students Reported From Schools</div>
                   </div>
                   
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('scope','school');
                     sp.set('frozen','true');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
                 <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
                   const sp = new URLSearchParams();
@@ -455,14 +457,14 @@ export default function ITAdminOverview() {
                     <span className="dot green" />
                     <div style={{ color: '#475569', fontWeight: 600 }}>Students Reported From Districts</div>
                   </div>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('scope','district');
                     sp.set('frozen','true');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
                 <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
                   const sp = new URLSearchParams();
@@ -486,13 +488,13 @@ export default function ITAdminOverview() {
                     <span className="dot violet" />
                     <div style={{ color: '#475569', fontWeight: 600 }}>Reported</div>
                   </div>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('present','true');
                     window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
@@ -529,13 +531,13 @@ export default function ITAdminOverview() {
                     <span className="dot green" />
                     <div style={{ color: '#475569', fontWeight: 600 }}> Total Accompanist Reported</div>
                   </div>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('frozen','true');
                     window.location.assign(`/it-admin/reports/teachers?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
                 <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
                   const sp = new URLSearchParams();
@@ -559,13 +561,13 @@ export default function ITAdminOverview() {
                     <span className="dot blue" />
                     <div style={{ color: '#475569', fontWeight: 600 }}>Teachers Reported From Schools</div>
                   </div>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('frozen','true');
                     window.location.assign(`/it-admin/reports/teachers-by-school?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
                 <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
                   const sp = new URLSearchParams();
@@ -586,14 +588,14 @@ export default function ITAdminOverview() {
                     <span className="dot green" />
                     <div style={{ color: '#475569', fontWeight: 600 }}>Gurus Reported From Districts</div>
                   </div>
-                  <button className="btn ghost" onClick={() => {
+                  {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
                     if (districtId) sp.set('districtId', districtId);
                     if (eventId) sp.set('eventId', eventId);
                     sp.set('scope','district');
                     sp.set('frozen','true');
                     window.location.assign(`/it-admin/reports/teachers?${sp.toString()}`);
-                  }}>View All</button>
+                  }}>View All</button> */}
                 </div>
                 <div className="stat-value red" style={{ cursor: 'pointer' }} onClick={() => {
                   const sp = new URLSearchParams();
@@ -942,76 +944,69 @@ export default function ITAdminOverview() {
               <div className="card-header">
                 <h3 style={{ margin: 0 }}>Students Yet to Report</h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {/* <button className="btn ghost" onClick={() => {
-                    const sp = new URLSearchParams();
-                    if (districtId) sp.set('districtId', districtId);
-                    if (eventId) sp.set('eventId', eventId);
-                    sp.set('present','false');
-                    sp.set('scope','school');
-                    window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View School List</button>
-                  <button className="btn ghost" onClick={() => {
-                    const sp = new URLSearchParams();
-                    if (districtId) sp.set('districtId', districtId);
-                    if (eventId) sp.set('eventId', eventId);
-                    sp.set('present','false');
-                    sp.set('scope','district');
-                    window.location.assign(`/it-admin/reports/participants?${sp.toString()}`);
-                  }}>View District List</button> */}
+                  <button
+                    className="btn ghost"
+                    type="button"
+                    onClick={() => setShowStudentsYet((prev) => !prev)}
+                  >
+                    {showStudentsYet ? 'Hide' : 'Show All'}
+                  </button>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-                <div>
-                  <h4 style={{ marginTop: 0 }}>School-wise</h4>
-                  <div className="table-wrapper">
-                    <table className="styled-table">
-                      <thead>
-                        <tr>
-                          <th>Sl.No</th>
-                          <th>School</th>
-                          <th>Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {studentsYet.schoolWise.length ? studentsYet.schoolWise.map((r, i) => (
-                          <tr key={`${r.schoolName}_${i}`}>
-                            <td>{i + 1}</td>
-                            <td>{r.schoolName || '-'}</td>
-                            <td>{r.count}</td>
+              {showStudentsYet && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+                  <div>
+                    <h4 style={{ marginTop: 0 }}>School-wise</h4>
+                    <div className="table-wrapper">
+                      <table className="styled-table">
+                        <thead>
+                          <tr>
+                            <th>Sl.No</th>
+                            <th>School</th>
+                            <th>Count</th>
                           </tr>
-                        )) : (
-                          <tr><td colSpan={3} style={{ textAlign: 'center' }}>No data</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {studentsYet.schoolWise.length ? studentsYet.schoolWise.map((r, i) => (
+                            <tr key={`${r.schoolName}_${i}`}>
+                              <td>{i + 1}</td>
+                              <td>{r.schoolName || '-'}</td>
+                              <td>{r.count}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={3} style={{ textAlign: 'center' }}>No data</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 style={{ marginTop: 0 }}>District-wise</h4>
+                    <div className="table-wrapper">
+                      <table className="styled-table">
+                        <thead>
+                          <tr>
+                            <th>Sl.No</th>
+                            <th>District</th>
+                            <th>Count</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {studentsYet.districtWise.length ? studentsYet.districtWise.map((r, i) => (
+                            <tr key={r.districtId || i}>
+                              <td>{i + 1}</td>
+                              <td>{r.districtName || '-'}</td>
+                              <td>{r.count}</td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan={3} style={{ textAlign: 'center' }}>No data</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h4 style={{ marginTop: 0 }}>District-wise</h4>
-                  <div className="table-wrapper">
-                    <table className="styled-table">
-                      <thead>
-                        <tr>
-                          <th>Sl.No</th>
-                          <th>District</th>
-                          <th>Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {studentsYet.districtWise.length ? studentsYet.districtWise.map((r, i) => (
-                          <tr key={r.districtId || i}>
-                            <td>{i + 1}</td>
-                            <td>{r.districtName || '-'}</td>
-                            <td>{r.count}</td>
-                          </tr>
-                        )) : (
-                          <tr><td colSpan={3} style={{ textAlign: 'center' }}>No data</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </>
         )}
