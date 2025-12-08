@@ -629,6 +629,12 @@ export default function ITAdminOverview() {
                         const row = [String(i+1), r.districtName, String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
                         lines.push(row.map(esc).join(","));
                       });
+                      // Grand totals row
+                      if ((distRows||[]).length) {
+                        const roleTotals = (distRoles||[]).map(k => String(distGrand.roles?.[k] || 0));
+                        const foot = ["Grand Total", "", String(distGrand.boys || 0), String(distGrand.girls || 0), ...roleTotals, String(distGrand.total || 0)];
+                        lines.push(foot.map(esc).join(","));
+                      }
                       const blob = new Blob([lines.join("\n")], { type: 'text/csv;charset=utf-8;' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
@@ -647,7 +653,15 @@ export default function ITAdminOverview() {
                           const sumRoles = roleVals.reduce((a,b)=>a+b,0);
                           return [String(i+1), r.districtName, String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
                         });
-                        autoTable(doc, { head: head, body: body, startY: 48, headStyles: { fillColor: [99,102,241] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
+                        const foot = (distRows||[]).length ? [[
+                          "Grand Total",
+                          "",
+                          String(distGrand.boys || 0),
+                          String(distGrand.girls || 0),
+                          ...((distRoles||[]).map(k => String(distGrand.roles?.[k] || 0))),
+                          String(distGrand.total || 0)
+                        ]] : [];
+                        autoTable(doc, { head: head, body: [...body, ...foot], startY: 48, headStyles: { fillColor: [99,102,241] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
                         doc.save('district_wise_totals.pdf');
                       } catch(e) {
                         alert('Please install jspdf and jspdf-autotable to export PDF');
