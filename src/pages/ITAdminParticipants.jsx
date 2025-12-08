@@ -29,6 +29,7 @@ export default function ITAdminParticipants() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Add Participant modal state
   const [showAdd, setShowAdd] = useState(false);
@@ -110,6 +111,14 @@ export default function ITAdminParticipants() {
   };
 
   useEffect(() => { load(); }, [scope, districtId, schoolName, eventId, present, frozen, gender, group, q]);
+
+  // Scroll-to-top button visibility
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (!anchorId) return;
@@ -686,6 +695,33 @@ export default function ITAdminParticipants() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {showScrollTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            style={{
+              position: 'fixed',
+              right: 20,
+              bottom: 24,
+              width: 44,
+              height: 44,
+              borderRadius: 999,
+              background: '#2563eb',
+              color: '#fff',
+              border: 'none',
+              fontSize: 22,
+              lineHeight: '44px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+              zIndex: 1100,
+            }}
+            aria-label="Scroll to top"
+            title="Scroll to top"
+          >
+            ↑
+          </button>
         )}
 
         {showAdd && (

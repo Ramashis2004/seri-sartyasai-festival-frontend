@@ -57,6 +57,7 @@ export default function ITAdminTeachers() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [anchorId, setAnchorId] = useState("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Initialize filters from query string (supports links from Overview)
   useEffect(() => {
@@ -289,6 +290,14 @@ export default function ITAdminTeachers() {
   };
 
   useEffect(() => { load(); }, [scope, districtId, schoolName, eventId, present, frozen, q]);
+
+  // Show scroll-to-top button on scroll
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (!anchorId) return;
@@ -818,6 +827,33 @@ div.swal2-container .swal2-checkbox {
                 )) : (
                   <tr><td colSpan={10} style={{ textAlign: "center", color: '#475569' }}>No teachers/gurus match the current filters.</td></tr>
                 )}
+
+        {showScrollTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            style={{
+              position: 'fixed',
+              right: 20,
+              bottom: 24,
+              width: 44,
+              height: 44,
+              borderRadius: 999,
+              background: '#2563eb',
+              color: '#fff',
+              border: 'none',
+              fontSize: 22,
+              lineHeight: '44px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+              zIndex: 1100,
+            }}
+            aria-label="Scroll to top"
+            title="Scroll to top"
+          >
+            ↑
+          </button>
+        )}
               </tbody>
             </table>
           </div>
