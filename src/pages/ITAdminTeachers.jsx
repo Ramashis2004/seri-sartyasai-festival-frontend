@@ -567,7 +567,12 @@ export default function ITAdminTeachers() {
       r.name || "",
       r.phone || "",
       getRoleText(r) || "",
-      r.gender || "",
+     r.gender === "boy"
+  ? "Gents"
+  : r.gender === "girl"
+  ? "Ladies"
+  : "",
+
       r.present ? "Yes" : "No",
       r.frozen ? "Yes" : "No",
     ]);
@@ -607,7 +612,12 @@ export default function ITAdminTeachers() {
         r.name || "",
         r.phone || "",
         getRoleText(r) || "",
-        r.gender || "",
+       r.gender === "boy"
+  ? "Gents"
+  : r.gender === "girl"
+  ? "Ladies"
+  : "",
+
         r.present ? "Yes" : "No",
         r.frozen ? "Yes" : "No",
       ]);
@@ -798,6 +808,8 @@ div.swal2-container .swal2-checkbox {
                         padding: "4px 10px",
                         border: "1px solid #0077b6",
                         cursor: r.frozen ? "not-allowed" : "pointer",
+                        opacity: r.frozen ? 0.5 : 1
+
                       }}
                     >
                       Edit
@@ -816,6 +828,9 @@ div.swal2-container .swal2-checkbox {
                         transition: "0.3s",
                         padding: "4px 10px",
                         cursor: r.frozen ? "not-allowed" : "pointer",
+                        opacity: r.frozen ? 0.5 : 1
+
+
                       }}
                     >
                       Delete

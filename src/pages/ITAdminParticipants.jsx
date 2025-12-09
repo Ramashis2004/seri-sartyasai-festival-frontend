@@ -327,10 +327,15 @@ export default function ITAdminParticipants() {
       r.districtName || "",
       r.schoolName || "",
       r.name || "",
-      r.gender || "",
+      (r.gender || "").charAt(0).toUpperCase() + (r.gender || "").slice(1),
       r.className || "",
       r.eventTitle || "",
-      r.source === "school" ? (r.group || "-") : "-",
+      r.source === "school"
+  ? (r.group === "junior" ? "Junior"
+    : r.group === "senior" ? "Senior"
+    : "-")
+  : "-",
+
       r.present ? "Yes" : "No",
       r.frozen ? "Yes" : "No",
     ]);
@@ -369,10 +374,16 @@ export default function ITAdminParticipants() {
         r.districtName || "",
         r.schoolName || "",
         r.name || "",
-        r.gender || "",
+       (r.gender || "").charAt(0).toUpperCase() + (r.gender || "").slice(1),
+
         r.className || "",
         r.eventTitle || "",
-        r.source === "school" ? (r.group || "-") : "-",
+       r.source === "school"
+  ? (r.group === "junior" ? "Junior"
+    : r.group === "senior" ? "Senior"
+    : "-")
+  : "-",
+
         r.present ? "Yes" : "No",
         r.frozen ? "Yes" : "No",
       ]);
@@ -420,10 +431,31 @@ export default function ITAdminParticipants() {
         new TableCell({ children: [new Paragraph(String(r.districtName || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.schoolName || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.name || ""))] }),
-        new TableCell({ children: [new Paragraph(String(r.gender || ""))] }),
+       new TableCell({
+  children: [
+    new Paragraph(
+      String(r.gender || "")
+        .charAt(0).toUpperCase() + String(r.gender || "").slice(1)
+    )
+  ]
+}),
+
         new TableCell({ children: [new Paragraph(String(r.className || ""))] }),
         new TableCell({ children: [new Paragraph(String(r.eventTitle || ""))] }),
-        new TableCell({ children: [new Paragraph(String(r.source === "school" ? (r.group || "-") : "-"))] }),
+       new TableCell({
+  children: [
+    new Paragraph(
+      String(
+        r.source === "school"
+          ? (r.group === "junior" ? "Junior"
+            : r.group === "senior" ? "Senior"
+            : "-")
+          : "-"
+      )
+    )
+  ]
+})
+,
         new TableCell({ children: [new Paragraph(String(r.present ? "Yes" : "No"))] }),
         new TableCell({ children: [new Paragraph(String(r.frozen ? "Yes" : "No"))] }),
       ] }));
@@ -671,7 +703,8 @@ export default function ITAdminParticipants() {
                           fontWeight: "bold",
                           borderRadius: "6px",
                           transition: "0.3s",
-                          cursor: "pointer",
+                           cursor: r.frozen ? "not-allowed" : "pointer",
+                           opacity: r.frozen ? 0.5 : 1
                         }}
                       >
                         Edit
