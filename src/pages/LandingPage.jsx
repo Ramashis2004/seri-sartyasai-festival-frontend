@@ -187,55 +187,60 @@ export default function LandingPage() {
         </div>
 
         {/* Full-screen Carousel */}
-        <div style={{
-          position: 'relative',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 1
-        }}>
-          {images.map((src, i) => (
-            <img 
-              key={src} 
-              src={src} 
-              alt={`slide ${i + 1}`}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-                opacity: i === index ? 1 : 0,
-                transition: 'opacity 800ms ease-in-out'
-              }}
-            />
-          ))}
-          <div style={{
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            bottom: 24,
-            display: 'flex',
-            gap: 10,
-            zIndex: 20
-          }}>
-            {images.map((_, i) => (
-              <span 
-                key={i}
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: i === index ? '#fff' : 'rgba(255,255,255,0.5)',
-                  boxShadow: i === index ? '0 2px 8px rgba(0,0,0,0.6)' : 'none',
-                  transition: 'all 0.3s'
-                }}
-              />
-            ))}
-          </div>
-        </div>
+<div
+  style={{
+    width: "100%",
+    aspectRatio: "2.4 / 1",   // 1920x800 ratio
+    position: "relative",
+    overflow: "hidden",
+  }}
+>
+  {/* Carousel Images */}
+  {images.map((src, i) => (
+    <img
+      key={src}
+      src={src}
+      alt={`slide ${i + 1}`}
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        objectPosition: "center",
+        opacity: i === index ? 1 : 0,
+        transition: "opacity 800ms ease-in-out",
+      }}
+    />
+  ))}
+
+  {/* Dots */}
+  <div
+    style={{
+      position: "absolute",
+      left: "50%",
+      transform: "translateX(-50%)",
+      bottom: 24,
+      display: "flex",
+      gap: 10,
+      zIndex: 20,
+    }}
+  >
+    {images.map((_, i) => (
+      <span
+        key={i}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          background: i === index ? "#fff" : "rgba(255,255,255,0.5)",
+          transition: "all 0.3s",
+        }}
+      />
+    ))}
+  </div>
+</div>
+
       </header>
 
       <main className="content-wrap">
