@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function LandingPage() {
-  const images = ["/images/banner 1.jpg", "/images/banner 2.jpg", "/images/banner 3.jpg","/images/banner 4.jpg", "/images/banner 5.jpg", "/images/banner 6.jpg", "/images/banner 7.jpg"];
+  const images = ["/images/banner 1.jpg", "/images/banner 2.jpg", "/images/banner 3.jpg", "/images/banner 4.jpg", "/images/banner 5.jpg", "/images/banner 6.jpg", "/images/banner 7.jpg"];
   const [index, setIndex] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [annLoad, setAnnLoad] = useState(false);
@@ -89,7 +89,7 @@ export default function LandingPage() {
             right: 0,
             height: '100vh',
             width: 280,
-            background: 'linear-gradient(90deg,#2f855a,#f6b042)',
+            background: '#88984f',
             boxShadow: '-4px 0 12px rgba(0,0,0,0.15)',
             transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 0.3s ease',
@@ -162,8 +162,8 @@ export default function LandingPage() {
             color: '#e5e7eb', 
             fontSize: 18,
             textShadow: '0 2px 8px rgba(0,0,0,0.5)'
-          }}>Annual Congregation of BalVikas Group III Children, Gurus, Sri Sathya Sai School Children, Teachers & Parents</p>
-          {/* <div>
+          }}>Celebrating Unity and Talent</p>
+          <div>
             <Link to="/events" style={{
               display: 'inline-block',
               borderRadius: 9999,
@@ -183,70 +183,84 @@ export default function LandingPage() {
               e.target.style.background = '#2f855a';
               e.target.style.transform = 'translateY(0)';
             }}>View Events</Link>
-          </div> */}
+          </div>
         </div>
 
         {/* Full-screen Carousel */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 1
-        }}>
-          {images.map((src, i) => (
-            <img 
-              key={src} 
-              src={src} 
-              alt={`slide ${i + 1}`}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-                opacity: i === index ? 1 : 0,
-                transition: 'opacity 800ms ease-in-out'
-              }}
-            />
-          ))}
-          <div style={{
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            bottom: 24,
-            display: 'flex',
-            gap: 10,
-            zIndex: 20
-          }}>
-            {images.map((_, i) => (
-              <span 
-                key={i}
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: i === index ? '#fff' : 'rgba(255,255,255,0.5)',
-                  boxShadow: i === index ? '0 2px 8px rgba(0,0,0,0.6)' : 'none',
-                  transition: 'all 0.3s'
-                }}
-              />
-            ))}
-          </div>
-        </div>
+       <div
+  style={{
+    position: "absolute",
+    inset: 0,
+    zIndex: 1,
+    overflow: "hidden"
+  }}
+>
+  {images.map((src, i) => (
+    <div key={src} style={{ inset: 0, position: "absolute" }}>
+      {/* Background cover (blurred) */}
+      <img
+        src={src}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover", // fills screen
+          filter: "blur(20px)", // blur background
+          opacity: i === index ? 1 : 0,
+          transition: "opacity 800ms ease-in-out"
+        }}
+      />
+
+      {/* Main image (full without cropping) */}
+      <img
+        src={src}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "contain", // full image visible
+          opacity: i === index ? 1 : 0,
+          transition: "opacity 800ms ease-in-out"
+        }}
+      />
+    </div>
+  ))}
+
+  {/* Your dots */}
+  <div
+    style={{
+      position: "absolute",
+      left: "50%",
+      transform: "translateX(-50%)",
+      bottom: 24,
+      display: "flex",
+      gap: 10,
+      zIndex: 20
+    }}
+  >
+    {images.map((_, i) => (
+      <span
+        key={i}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          background: i === index ? "#fff" : "rgba(255,255,255,0.5)",
+          transition: "all 0.3s"
+        }}
+      />
+    ))}
+  </div>
+</div>
+
       </header>
 
       <main className="content-wrap">
         <section className="welcome-section">
-          <h2>Sri Sathya Sai Festival of Joy</h2>
-         <p className="lead" style={{ textAlign: "justify" }}>
-  A Celebration of Talent, Culture, and Unity! 🌟 : Join us for a spectacular event where students of Sri Sathya Sai BalVikas and Sri Sathya Sai Schools come together to showcase their incredible skills and creativity! 🎨🎶 This joyous celebration is all about promoting unity, equality, and the spirit of togetherness. Every student is treated equally and receives a prize, regardless of their position 🏆. Come, be a part of this vibrant extravaganza and witness the talents of our future leaders! 🌈 
-
-  Jai Sai Ram 🙏
-</p>
-
+          <h2>Welcome to Festival of Joy</h2>
+          <p className="lead">A celebration of talent, culture, and unity among Sai Schools and Sai Districts. Join us in this spectacular event where students showcase their skills and creativity.</p>
 
           <div className="role-cards">
             <div className="role-card">
@@ -277,12 +291,12 @@ export default function LandingPage() {
               <Link to="/register/district-coordinator" className="register-link">Register As District Coordinator →</Link>
             </div>
 
-            {/* <div className="role-card">
+            <div className="role-card">
               <div className="role-icon">⭐</div>
               <h3>Register As Master Admin</h3>
-              <p>Master admins oversee the whole festival </p>
+              <p>Master admins oversee the whole festival, manage districts and schools.</p>
               <Link to="/register/master-admin" className="register-link">Register As Master Admin →</Link>
-            </div> */}
+            </div>
           </div>
         </section>
 
@@ -329,7 +343,8 @@ export default function LandingPage() {
           )}
         </section>
       </main>
-       <footer className="dems-footer">
+
+      <footer className="dems-footer">
         <div style={{ textAlign: 'center' }}>
           <div className="footer-container">
             <div className="footer-logo">
@@ -351,7 +366,7 @@ export default function LandingPage() {
         <style>{`
           .dems-footer {
             background: linear-gradient(135deg, #f8f4ed 0%, #fdf9f3 100%);
-            padding: 1rem 0rem;
+            padding: 1rem  0rem;
             width: 100%;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
           }
