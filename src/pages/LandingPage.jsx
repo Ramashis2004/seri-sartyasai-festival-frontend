@@ -189,8 +189,6 @@ export default function LandingPage() {
         {/* Full-screen Carousel */}
         <div style={{
           position: 'relative',
-          width: '100%',
-          aspectRatio: '16 / 9',
           top: 0,
           left: 0,
           right: 0,
