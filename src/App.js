@@ -20,6 +20,8 @@ import ITAdminTeachers from "./pages/ITAdminTeachers";
 import ITAdminParticipantsReport from "./pages/ITAdminParticipantsReport";
 import ITAdminTeachersReport from "./pages/ITAdminTeachersReport";
 import ITAdminTeachersSchoolReport from "./pages/ITAdminTeachersSchoolReport";
+import ITAdminDistrictTotalsReport from "./pages/ITAdminDistrictTotalsReport";
+import ITAdminEventWiseReport from "./pages/ITAdminEventWiseReport";
 import ITAdminDetailedList from "./pages/ITAdminDetailedList";
 import DistrictDashboard from "./pages/DistrictDashboard";
 import SchoolDashboard from "./pages/SchoolDashboard";
@@ -153,6 +155,22 @@ function App() {
           element={
             <ProtectedRoute allowRoles={["it_admin"]}>
               <ITAdminTeachersSchoolReport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/it-admin/reports/district-totals"
+          element={
+            <ProtectedRoute allowRoles={["it_admin"]}>
+              <ITAdminDistrictTotalsReport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/it-admin/reports/event-wise"
+          element={
+            <ProtectedRoute allowRoles={["it_admin"]}>
+              <ITAdminEventWiseReport />
             </ProtectedRoute>
           }
         />

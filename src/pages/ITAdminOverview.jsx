@@ -722,8 +722,24 @@ export default function ITAdminOverview() {
                       <option value="true">Frozen</option>
                       <option value="false">Present</option>
                     </select>
-                    <button className="btn ghost" onClick={() => { setDistAll(false); setShowDistWise(v => !v); }}>{showDistWise ? 'Hide' : 'Show'}</button>
-                    <button className="btn ghost" onClick={() => { setDistAll(true); setShowDistWise(true); }}>Show All</button>
+                    <button className="btn ghost" onClick={() => {
+                      const sp = new URLSearchParams();
+                      if (districtId) sp.set('districtId', districtId);
+                      if (eventId) sp.set('eventId', eventId);
+                      sp.set('scope', distScope);
+                      sp.set('frozen', String(distFrozen));
+                      sp.set('all','false');
+                      window.location.assign(`/it-admin/reports/district-totals?${sp.toString()}`);
+                    }}>{showDistWise ? 'Hide' : 'Show'}</button>
+                    <button className="btn ghost" onClick={() => {
+                      const sp = new URLSearchParams();
+                      if (districtId) sp.set('districtId', districtId);
+                      if (eventId) sp.set('eventId', eventId);
+                      sp.set('scope', distScope);
+                      sp.set('frozen', String(distFrozen));
+                      sp.set('all','true');
+                      window.location.assign(`/it-admin/reports/district-totals?${sp.toString()}`);
+                    }}>Show All</button>
                     <button className="btn" onClick={() => {
                       const lines = [];
                       const header = ["Sl.No","District", ...(distScope==='school'?['School']:[]), "Boys","Girls", ...(distRoles||[]).map(k => memberLabels[k] || k), "Grand Total"];
@@ -836,7 +852,12 @@ export default function ITAdminOverview() {
                 <div className="card-header" style={{ alignItems: 'center' }}>
                   <h3 style={{ margin: 0 }}>Event-wise Report</h3>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button className="btn ghost" onClick={() => setShowEventWise(v => !v)}>{showEventWise ? 'Hide' : 'Show'}</button>
+                    <button className="btn ghost" onClick={() => {
+                      const sp = new URLSearchParams();
+                      if (districtId) sp.set('districtId', districtId);
+                      if (eventId) sp.set('eventId', eventId);
+                      window.location.assign(`/it-admin/reports/event-wise?${sp.toString()}`);
+                    }}>{showEventWise ? 'Hide' : 'Show'}</button>
                     <button className="btn" onClick={() => {
                       const lines = [];
                       lines.push(["Sl.No","Scope","Event","Audience","Nomination","Present"].join(","));
