@@ -712,7 +712,7 @@ export default function ITAdminOverview() {
               {/* Middle: District-wise Totals */}
               <div className="card" style={{ display: 'grid', gap: 8 }}>
                 <div className="card-header" style={{ alignItems: 'center' }}>
-                  <h3 style={{ margin: 0 }}>Total Participant Count (District-wise)</h3>
+                  <h3 style={{ margin: 0 }}>Total Participant Count</h3>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <select value={distScope} onChange={(e) => setDistScope(e.target.value)}>
                       <option value="school">School</option>
@@ -730,17 +730,16 @@ export default function ITAdminOverview() {
                       sp.set('frozen', String(distFrozen));
                       sp.set('all','false');
                       window.location.assign(`/it-admin/reports/district-totals?${sp.toString()}`);
-                    }}>{showDistWise ? 'Hide' : 'Show'}</button>
+                    }}>{showDistWise ? 'Hide' : 'Present Data'}</button>
                     <button className="btn ghost" onClick={() => {
                       const sp = new URLSearchParams();
                       if (districtId) sp.set('districtId', districtId);
                       if (eventId) sp.set('eventId', eventId);
                       sp.set('scope', distScope);
-                      sp.set('frozen', String(distFrozen));
                       sp.set('all','true');
                       window.location.assign(`/it-admin/reports/district-totals?${sp.toString()}`);
-                    }}>Show All</button>
-                    <button className="btn" onClick={() => {
+                    }}>Nominatations</button>
+                    {/* <button className="btn" onClick={() => {
                       const lines = [];
                       const header = ["Sl.No","District", ...(distScope==='school'?['School']:[]), "Boys","Girls", ...(distRoles||[]).map(k => memberLabels[k] || k), "Grand Total"];
                       lines.push(header.join(","));
@@ -761,8 +760,8 @@ export default function ITAdminOverview() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url; a.download = 'district_wise_totals.csv'; a.click(); URL.revokeObjectURL(url);
-                    }}>CSV</button>
-                    <button className="btn" onClick={async () => {
+                    }}>CSV</button> */}
+                    {/* <button className="btn" onClick={async () => {
                       try {
                         const { default: jsPDF } = await import('jspdf');
                         const autoTable = (await import('jspdf-autotable')).default;
@@ -789,7 +788,7 @@ export default function ITAdminOverview() {
                       } catch(e) {
                         alert('Please install jspdf and jspdf-autotable to export PDF');
                       }
-                    }}>PDF</button>
+                    }}>PDF</button> */}
                   </div>
                 </div>
                 {showDistWise && (

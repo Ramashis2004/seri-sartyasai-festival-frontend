@@ -39,15 +39,13 @@ export default function ITAdminDistrictTotalsReport() {
       setLoading(true);
       if (scope === "district") {
         if (all) {
-          const [pTrue, pFalse, tTrue, tFalse] = await Promise.all([
-            itGetParticipantsByDistrictReport({ districtId, eventId, scope: "district", frozen: "true" }).catch(() => ({ rows: [] })),
-            itGetParticipantsByDistrictReport({ districtId, eventId, scope: "district", frozen: "false" }).catch(() => ({ rows: [] })),
-            itGetTeachersByDistrictReport({ districtId, eventId, scope: "district", frozen: "true" }).catch(() => ({ roles: [], rows: [] })),
-            itGetTeachersByDistrictReport({ districtId, eventId, scope: "district", frozen: "false" }).catch(() => ({ roles: [], rows: [] })),
+          const [pData, tData] = await Promise.all([
+            itGetParticipantsByDistrictReport({ districtId, eventId, scope: "district", all: "true" }).catch(() => ({ rows: [] })),
+            itGetTeachersByDistrictReport({ districtId, eventId, scope: "district", all: "true" }).catch(() => ({ roles: [], rows: [] })),
           ]);
-          const pRows = [...(Array.isArray(pTrue?.rows)?pTrue.rows:[]), ...(Array.isArray(pFalse?.rows)?pFalse.rows:[])];
-          const tRoles = Array.from(new Set([...(Array.isArray(tTrue?.roles)?tTrue.roles:[]), ...(Array.isArray(tFalse?.roles)?tFalse.roles:[])]));
-          const tRows = [...(Array.isArray(tTrue?.rows)?tTrue.rows:[]), ...(Array.isArray(tFalse?.rows)?tFalse.rows:[])];
+          const pRows = Array.isArray(pData?.rows) ? pData.rows : [];
+          const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
+          const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
           const map = new Map();
           pRows.forEach((r) => {
             const key = String(r.districtId);
@@ -65,8 +63,10 @@ export default function ITAdminDistrictTotalsReport() {
             cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
             map.set(key, cur);
           });
-          setRoles(tRoles);
-          setRows(Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName)));
+          const finalRows = Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName));
+          const combinedRoleKeys = Array.from(new Set([...(tRoles || []), ...finalRows.flatMap(r => Object.keys(r.byRole || {}))]));
+          setRoles(combinedRoleKeys);
+          setRows(finalRows);
         } else {
           const [pData, tData] = await Promise.all([
             itGetParticipantsByDistrictReport({ districtId, eventId, scope: 'district', frozen: String(frozen) }).catch(() => ({ rows: [] })),
@@ -87,20 +87,19 @@ export default function ITAdminDistrictTotalsReport() {
             cur.rolesTotal = Number(r.total || 0);
             map.set(key, cur);
           });
-          setRoles(tRoles);
-          setRows(Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName)));
+          const finalRows = Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName));
+          const combinedRoleKeys = Array.from(new Set([...(tRoles || []), ...finalRows.flatMap(r => Object.keys(r.byRole || {}))]));
+          setRoles(combinedRoleKeys);
+          setRows(finalRows);
         }
       } else {
         if (all) {
-          const [pTrue, pFalse, tTrue, tFalse] = await Promise.all([
-            itListParticipants({ scope: 'school', districtId, eventId, frozen: 'true' }).catch(() => []),
-            itListParticipants({ scope: 'school', districtId, eventId, frozen: 'false' }).catch(() => []),
-            itGetTeachersBySchoolReport({ districtId, eventId, frozen: 'true' }).catch(() => ({ roles: [], rows: [] })),
-            itGetTeachersBySchoolReport({ districtId, eventId, frozen: 'false' }).catch(() => ({ roles: [], rows: [] })),
+          const [pList, tData] = await Promise.all([
+            itListParticipants({ scope: 'school', districtId, eventId, all: 'true' }).catch(() => []),
+            itGetTeachersBySchoolReport({ districtId, eventId, all: 'true' }).catch(() => ({ roles: [], rows: [] })),
           ]);
-          const pList = [...(Array.isArray(pTrue)?pTrue:[]), ...(Array.isArray(pFalse)?pFalse:[])];
-          const tRoles = Array.from(new Set([...(Array.isArray(tTrue?.roles)?tTrue.roles:[]), ...(Array.isArray(tFalse?.roles)?tFalse.roles:[])]));
-          const tRows = [...(Array.isArray(tTrue?.rows)?tTrue.rows:[]), ...(Array.isArray(tFalse?.rows)?tFalse.rows:[])];
+          const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
+          const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
           const map = new Map();
           (Array.isArray(pList) ? pList : []).forEach((p) => {
             const dId = String(p.districtId || '');
@@ -117,18 +116,32 @@ export default function ITAdminDistrictTotalsReport() {
             map.set(key, cur);
           });
           tRows.forEach((r) => {
-            const dId = String(r.districtId || '');
             const sName = r.schoolName || '-';
-            if (!dId || !sName) return;
-            const key = `${dId}__${sName}`;
-            const cur = map.get(key) || { key, districtId: dId, districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
-            const byRole = r.byRole || {};
-            Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
-            cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
-            map.set(key, cur);
+            if (!sName) return;
+            // Try to find existing map entry by matching schoolName
+            let found = false;
+            for (const [key, cur] of map.entries()) {
+              if (cur.schoolName === sName) {
+                const byRole = r.byRole || {};
+                Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
+                cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+                found = true;
+                break;
+              }
+            }
+            if (!found) {
+              const key = `unknown__${sName}`;
+              const cur = map.get(key) || { key, districtId: '', districtName: '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+              const byRole = r.byRole || {};
+              Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
+              cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+              map.set(key, cur);
+            }
           });
-          setRoles(tRoles);
-          setRows(Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || '')));
+          const finalRows = Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
+          const combinedRoleKeys = Array.from(new Set([...(tRoles || []), ...finalRows.flatMap(r => Object.keys(r.byRole || {}))]));
+          setRoles(combinedRoleKeys);
+          setRows(finalRows);
         } else {
           const [pList, tData] = await Promise.all([
             itListParticipants({ scope: 'school', districtId, eventId, frozen: String(frozen) }).catch(() => []),
@@ -152,17 +165,34 @@ export default function ITAdminDistrictTotalsReport() {
             map.set(key, cur);
           });
           tRows.forEach((r) => {
-            const dId = String(r.districtId || '');
             const sName = r.schoolName || '-';
-            if (!dId || !sName) return;
-            const key = `${dId}__${sName}`;
-            const cur = map.get(key) || { key, districtId: dId, districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
-            cur.byRole = r.byRole || {};
-            cur.rolesTotal = Number(r.total || 0);
-            map.set(key, cur);
+            if (!sName) return;
+            // For school scope, we need to find matching entries by schoolName
+            // Create a composite key using schoolName - look for any entry with this school
+            let found = false;
+            for (const [key, cur] of map.entries()) {
+              if (cur.schoolName === sName) {
+                const byRole = r.byRole || {};
+                Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
+                cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+                found = true;
+                break;
+              }
+            }
+            // If not found, create new entry
+            if (!found) {
+              const key = `unknown__${sName}`;
+              const cur = map.get(key) || { key, districtId: '', districtName: '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+              const byRole = r.byRole || {};
+              Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
+              cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+              map.set(key, cur);
+            }
           });
-          setRoles(tRoles);
-          setRows(Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || '')));
+          const finalRows = Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
+          const combinedRoleKeys = Array.from(new Set([...(tRoles || []), ...finalRows.flatMap(r => Object.keys(r.byRole || {}))]));
+          setRoles(combinedRoleKeys);
+          setRows(finalRows);
         }
       }
     } finally {
@@ -172,16 +202,17 @@ export default function ITAdminDistrictTotalsReport() {
 
   const grand = useMemo(() => {
     const res = { boys: 0, girls: 0, roles: {}, total: 0 };
-    (roles || []).forEach(k => { res.roles[k] = 0; });
+    // Aggregate counts directly from rows.byRole to avoid role-key mismatches
     (rows || []).forEach(r => {
       res.boys += Number(r.boys || 0);
       res.girls += Number(r.girls || 0);
-      (roles || []).forEach(k => { res.roles[k] += Number(r.byRole?.[k] || 0); });
+      const by = r.byRole || {};
+      Object.keys(by).forEach((k) => { res.roles[k] = (res.roles[k] || 0) + Number(by[k] || 0); });
     });
-    const rolesSum = (roles || []).reduce((a,k)=> a + Number(res.roles[k] || 0), 0);
+    const rolesSum = Object.values(res.roles).reduce((a,b) => a + Number(b || 0), 0);
     res.total = Number(res.boys || 0) + Number(res.girls || 0) + rolesSum;
     return res;
-  }, [rows, roles]);
+  }, [rows]);
 
   useEffect(() => { load(); }, []);
 
@@ -192,7 +223,7 @@ export default function ITAdminDistrictTotalsReport() {
     const esc = (v) => (/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v));
     (rows || []).forEach((r, i) => {
       const roleVals = (roles||[]).map(k => Number(r.byRole?.[k] || 0));
-      const sumRoles = roleVals.reduce((a,b)=>a+b,0);
+      const sumRoles = Object.values(r.byRole || {}).reduce((a,b)=> a + Number(b || 0), 0);
       const row = [String(i+1), r.districtName, ...(scope==='school'?[r.schoolName||'-']:[]), String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
       lines.push(row.map(esc).join(","));
     });
@@ -213,11 +244,11 @@ export default function ITAdminDistrictTotalsReport() {
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       doc.setFontSize(14);
-      doc.text('District-wise Totals', 40, 32);
+      doc.text('District-wise Total Participant Count', 40, 32);
       const head = [["Sl.No","District", ...(scope==='school'?['School']:[]), "Boys","Girls", ...(roles||[]).map(k => memberLabels[k] || k), "Grand Total"]];
       const body = (rows || []).map((r, i) => {
         const roleVals = (roles||[]).map(k => Number(r.byRole?.[k] || 0));
-        const sumRoles = roleVals.reduce((a,b)=>a+b,0);
+        const sumRoles = Object.values(r.byRole || {}).reduce((a,b) => a + Number(b || 0), 0);
         return [String(i+1), r.districtName, ...(scope==='school'?[r.schoolName||'-']:[]), String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
       });
       const foot = (rows||[]).length ? [[
@@ -237,7 +268,7 @@ export default function ITAdminDistrictTotalsReport() {
   };
 
   return (
-    <DashboardLayout title="District-wise Totals" sidebarItems={sidebarItems} activeKey="overview" onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}>
+    <DashboardLayout title="School-wise Total Participant Count" sidebarItems={sidebarItems} activeKey="overview" onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}>
       <div style={{ display: 'grid', gap: 12 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button className="btn" onClick={() => window.history.back()}>Back</button>
@@ -267,7 +298,7 @@ export default function ITAdminDistrictTotalsReport() {
               <tbody>
                 {(rows || []).length ? (rows || []).map((r, i) => {
                   const roleVals = (roles||[]).map(k => Number(r.byRole?.[k] || 0));
-                  const sumRoles = roleVals.reduce((a,b)=>a+b,0);
+                  const sumRoles = Object.values(r.byRole || {}).reduce((a,b) => a + Number(b || 0), 0);
                   return (
                     <tr key={r.key || r.districtName}>
                       <td>{i + 1}</td>
