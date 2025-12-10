@@ -190,9 +190,12 @@ export default function LandingPage() {
 <div
   style={{
     width: "100%",
-    aspectRatio: "2.4 / 1",   // 1920x800 ratio
+    height: "calc(100vw / 2.4)",  // 1920/800 ratio
+    maxHeight: "800px",
     position: "relative",
     overflow: "hidden",
+    margin: 0,
+    padding: 0,
   }}
 >
   {/* Carousel Images */}
