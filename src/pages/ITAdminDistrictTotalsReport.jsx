@@ -125,13 +125,14 @@ export default function ITAdminDistrictTotalsReport() {
                 const byRole = r.byRole || {};
                 Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
                 cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+                if ((!cur.districtName || String(cur.districtName).trim() === '-') && r.districtName) cur.districtName = r.districtName;
                 found = true;
                 break;
               }
             }
             if (!found) {
               const key = `unknown__${sName}`;
-              const cur = map.get(key) || { key, districtId: '', districtName: '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+             const cur = map.get(key) || { key, districtId: '', districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
               const byRole = r.byRole || {};
               Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
               cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
