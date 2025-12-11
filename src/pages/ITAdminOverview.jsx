@@ -718,10 +718,10 @@ export default function ITAdminOverview() {
                       <option value="school">School</option>
                       <option value="district">District</option>
                     </select>
-                    <select value={String(distFrozen)} onChange={(e) => setDistFrozen(e.target.value === 'true')}>
+                    {/* <select value={String(distFrozen)} onChange={(e) => setDistFrozen(e.target.value === 'true')}>
                       <option value="true">Frozen</option>
                       <option value="false">Present</option>
-                    </select>
+                    </select> */}
                     <button className="btn ghost" onClick={() => {
                       const sp = new URLSearchParams();
                       if (districtId) sp.set('districtId', districtId);
@@ -857,7 +857,7 @@ export default function ITAdminOverview() {
                       if (eventId) sp.set('eventId', eventId);
                       window.location.assign(`/it-admin/reports/event-wise?${sp.toString()}`);
                     }}>{showEventWise ? 'Hide' : 'Show'}</button>
-                    <button className="btn" onClick={() => {
+                    {/* <button className="btn" onClick={() => {
                       const lines = [];
                       lines.push(["Sl.No","Scope","Event","Audience","Nomination","Present"].join(","));
                       const esc = (v) => (/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v));
@@ -871,8 +871,8 @@ export default function ITAdminOverview() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url; a.download = 'event_wise_report.csv'; a.click(); URL.revokeObjectURL(url);
-                    }}>CSV</button>
-                    <button className="btn" onClick={async() => {
+                    }}>CSV</button> */}
+                    {/* <button className="btn" onClick={async() => {
                       try {
                         const { default: jsPDF } = await import('jspdf');
                         const autoTable = (await import('jspdf-autotable')).default;
@@ -894,7 +894,7 @@ export default function ITAdminOverview() {
                       } catch(e) {
                         alert('Please install jspdf and jspdf-autotable to export PDF');
                       }
-                    }}>PDF</button>
+                    }}>PDF</button> */}
                   </div>
                 </div>
                 {showEventWise && (
