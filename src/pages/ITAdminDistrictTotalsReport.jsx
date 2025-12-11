@@ -102,11 +102,13 @@ export default function ITAdminDistrictTotalsReport() {
           const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
           const map = new Map();
           (Array.isArray(pList) ? pList : []).forEach((p) => {
-            const dId = String(p.districtId || '');
+            const dIdRaw = p.districtId;
+            const dId = dIdRaw !== undefined && dIdRaw !== null ? String(dIdRaw) : '';
             const dName = p.districtName || '-';
-            const sName = p.schoolName || '-';
-            if (!dId || !sName) return;
-            const key = `${dId}__${sName}`;
+            const sNameRaw = p.schoolName || '';
+            const sName = sNameRaw.trim();
+            if (!sName) return;
+            const key = dId ? `${dId}__${sName}` : `unknown__${sName}`;
             const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
             const isBoy = String(p.gender || '').toLowerCase() === 'boy';
             const isGirl = String(p.gender || '').toLowerCase() === 'girl';
@@ -116,15 +118,18 @@ export default function ITAdminDistrictTotalsReport() {
             map.set(key, cur);
           });
           tRows.forEach((r) => {
-            const sName = r.schoolName || '-';
+            const sNameRaw = r.schoolName || '';
+            const sName = sNameRaw.trim();
             if (!sName) return;
-            // Try to find existing map entry by matching schoolName
+            const sNorm = sName.toLowerCase();
+            // Try to find existing map entry by matching normalized schoolName
             let found = false;
             for (const [key, cur] of map.entries()) {
-              if (cur.schoolName === sName) {
+              if ((cur.schoolName || '').trim().toLowerCase() === sNorm) {
                 const byRole = r.byRole || {};
                 Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
                 cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+                // prefer teacher's districtName if current is missing or '-'
                 if ((!cur.districtName || String(cur.districtName).trim() === '-') && r.districtName) cur.districtName = r.districtName;
                 found = true;
                 break;
@@ -132,10 +137,11 @@ export default function ITAdminDistrictTotalsReport() {
             }
             if (!found) {
               const key = `unknown__${sName}`;
-             const cur = map.get(key) || { key, districtId: '', districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+              const cur = map.get(key) || { key, districtId: '', districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
               const byRole = r.byRole || {};
               Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
               cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+              if ((!cur.districtName || String(cur.districtName).trim() === '-') && r.districtName) cur.districtName = r.districtName;
               map.set(key, cur);
             }
           });
@@ -166,27 +172,31 @@ export default function ITAdminDistrictTotalsReport() {
             map.set(key, cur);
           });
           tRows.forEach((r) => {
-            const sName = r.schoolName || '-';
+            const sNameRaw = r.schoolName || '';
+            const sName = sNameRaw.trim();
             if (!sName) return;
-            // For school scope, we need to find matching entries by schoolName
-            // Create a composite key using schoolName - look for any entry with this school
+            const sNorm = sName.toLowerCase();
+            // For school scope, find matching entries by normalized schoolName
             let found = false;
             for (const [key, cur] of map.entries()) {
-              if (cur.schoolName === sName) {
+              if ((cur.schoolName || '').trim().toLowerCase() === sNorm) {
                 const byRole = r.byRole || {};
                 Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
                 cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+                // prefer teacher's districtName if current is missing or '-'
+                if ((!cur.districtName || String(cur.districtName).trim() === '-') && r.districtName) cur.districtName = r.districtName;
                 found = true;
                 break;
               }
             }
-            // If not found, create new entry
+            // If not found, create new entry using teacher's districtName if available
             if (!found) {
               const key = `unknown__${sName}`;
-              const cur = map.get(key) || { key, districtId: '', districtName: '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+              const cur = map.get(key) || { key, districtId: '', districtName: r.districtName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
               const byRole = r.byRole || {};
               Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
               cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+              if ((!cur.districtName || String(cur.districtName).trim() === '-') && r.districtName) cur.districtName = r.districtName;
               map.set(key, cur);
             }
           });
