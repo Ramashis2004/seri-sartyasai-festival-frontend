@@ -181,7 +181,8 @@ export default function ITAdminDistrictTotalsReport() {
             }
             // If not found, create new entry
             if (!found) {
-              const key = `unknown__${sName}`;
+             const key = sName;
+
               const cur = map.get(key) || { key, districtId: '', districtName: '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
               const byRole = r.byRole || {};
               Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
