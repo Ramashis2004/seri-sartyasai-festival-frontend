@@ -34,26 +34,6 @@ export default function ITAdminDistrictTotalsReport() {
     secretary_manager: "Secretary Manager",
   };
 
-  // Helper to extract district name from various possible shapes
-  const extractDistrictName = (obj) => {
-    if (!obj) return '';
-    // common variants
-    const candidates = [obj.districtName, obj.district_name, obj.districtname, obj.district, obj.districtId, obj.district_id];
-    for (const c of candidates) {
-      if (c === undefined || c === null) continue;
-      if (typeof c === 'string' && c.trim()) return c.trim();
-      if (typeof c === 'number') return String(c);
-      if (typeof c === 'object') {
-        // nested object like { id, name }
-        if (c.name && String(c.name).trim()) return String(c.name).trim();
-        if (c.title && String(c.title).trim()) return String(c.title).trim();
-      }
-    }
-    return '';
-  };
-
-  const normalizeSchoolName = (s) => (s || '').toString().trim();
-
   const load = async () => {
     try {
       setLoading(true);
@@ -118,21 +98,16 @@ export default function ITAdminDistrictTotalsReport() {
             itListParticipants({ scope: 'school', districtId, eventId, all: 'true' }).catch(() => []),
             itGetTeachersBySchoolReport({ districtId, eventId, all: 'true' }).catch(() => ({ roles: [], rows: [] })),
           ]);
-          // DEBUG: temporary logs to help identify missing districtName in responses
-          try { console.debug('DEBUG participants (school, all):', Array.isArray(pList) ? pList.length : typeof pList, Array.isArray(pList) ? pList.slice(0,8) : pList); } catch(e) {}
-          try { console.debug('DEBUG teachers (school, all):', Array.isArray(tData?.rows) ? tData.rows.length : typeof tData?.rows, Array.isArray(tData?.rows) ? tData.rows.slice(0,8) : tData?.rows); } catch(e) {}
           const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
           const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
           const map = new Map();
           (Array.isArray(pList) ? pList : []).forEach((p) => {
-            const dIdRaw = p.districtId ?? p.district_id ?? p.districtid ?? '';
-            const dId = dIdRaw !== undefined && dIdRaw !== null ? String(dIdRaw) : '';
-            const dName = extractDistrictName(p) || '';
-            const sNameRaw = p.schoolName || '';
-            const sName = normalizeSchoolName(sNameRaw);
-            if (!sName) return;
-            const key = dId ? `${dId}__${sName}` : `unknown__${sName}`;
-            const cur = map.get(key) || { key, districtId: dId, districtName: dName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            const dId = String(p.districtId || '');
+            const dName = p.districtName || '-';
+            const sName = p.schoolName || '-';
+            if (!dId || !sName) return;
+            const key = `${dId}__${sName}`;
+            const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
             const isBoy = String(p.gender || '').toLowerCase() === 'boy';
             const isGirl = String(p.gender || '').toLowerCase() === 'girl';
             cur.boys += isBoy ? 1 : 0;
@@ -141,32 +116,25 @@ export default function ITAdminDistrictTotalsReport() {
             map.set(key, cur);
           });
           tRows.forEach((r) => {
-            const sNameRaw = r.schoolName || '';
-            const sName = sNameRaw.trim();
+            const sName = r.schoolName || '-';
             if (!sName) return;
-            const sNorm = sName.toLowerCase();
-            // Try to find existing map entry by matching normalized schoolName
+            // Try to find existing map entry by matching schoolName
             let found = false;
             for (const [key, cur] of map.entries()) {
-              if ((cur.schoolName || '').trim().toLowerCase() === sNorm) {
-                  const byRole = r.byRole || {};
-                  Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
-                  cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
-                  // prefer teacher's districtName if current is missing or '-'
-                  const teacherD = extractDistrictName(r);
-                  if ((!cur.districtName || String(cur.districtName).trim() === '-') && teacherD) cur.districtName = teacherD;
-                  found = true;
-                  break;
-                }
+              if (cur.schoolName === sName) {
+                const byRole = r.byRole || {};
+                Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
+                cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
+                found = true;
+                break;
+              }
             }
             if (!found) {
-                const key = `unknown__${sName}`;
-                const teacherD = extractDistrictName(r);
-                const cur = map.get(key) || { key, districtId: '', districtName: teacherD || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+              const key = `unknown__${sName}`;
+              const cur = map.get(key) || { key, districtId: '', districtName: '', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
               const byRole = r.byRole || {};
               Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
               cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
-                if ((!cur.districtName || String(cur.districtName).trim() === '-') && teacherD) cur.districtName = teacherD;
               map.set(key, cur);
             }
           });
@@ -179,20 +147,16 @@ export default function ITAdminDistrictTotalsReport() {
             itListParticipants({ scope: 'school', districtId, eventId, frozen: String(frozen) }).catch(() => []),
             itGetTeachersBySchoolReport({ districtId, eventId, frozen: String(frozen) }).catch(() => ({ roles: [], rows: [] })),
           ]);
-          // DEBUG: temporary logs to help identify missing districtName in responses
-          try { console.debug('DEBUG participants (school, frozen):', Array.isArray(pList) ? pList.length : typeof pList, Array.isArray(pList) ? pList.slice(0,8) : pList); } catch(e) {}
-          try { console.debug('DEBUG teachers (school, frozen):', Array.isArray(tData?.rows) ? tData.rows.length : typeof tData?.rows, Array.isArray(tData?.rows) ? tData.rows.slice(0,8) : tData?.rows); } catch(e) {}
           const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
           const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
           const map = new Map();
           (Array.isArray(pList) ? pList : []).forEach((p) => {
-            const dIdRaw = p.districtId ?? p.district_id ?? p.districtid ?? '';
-            const dId = dIdRaw !== undefined && dIdRaw !== null ? String(dIdRaw) : '';
-            const dName = extractDistrictName(p) || '';
-            const sName = normalizeSchoolName(p.schoolName || '');
-            if (!sName) return;
-            const key = dId ? `${dId}__${sName}` : `unknown__${sName}`;
-            const cur = map.get(key) || { key, districtId: dId, districtName: dName || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+            const dId = String(p.districtId || '');
+            const dName = p.districtName || '-';
+            const sName = p.schoolName || '-';
+            if (!dId || !sName) return;
+            const key = `${dId}__${sName}`;
+            const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
             const isBoy = String(p.gender || '').toLowerCase() === 'boy';
             const isGirl = String(p.gender || '').toLowerCase() === 'girl';
             cur.boys += isBoy ? 1 : 0;
@@ -201,33 +165,27 @@ export default function ITAdminDistrictTotalsReport() {
             map.set(key, cur);
           });
           tRows.forEach((r) => {
-            const sNameRaw = r.schoolName || '';
-            const sName = sNameRaw.trim();
+            const sName = r.schoolName || '-';
             if (!sName) return;
-            const sNorm = sName.toLowerCase();
-            // For school scope, find matching entries by normalized schoolName
+            // For school scope, we need to find matching entries by schoolName
+            // Create a composite key using schoolName - look for any entry with this school
             let found = false;
             for (const [key, cur] of map.entries()) {
-              if ((cur.schoolName || '').trim().toLowerCase() === sNorm) {
+              if (cur.schoolName === sName) {
                 const byRole = r.byRole || {};
                 Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
                 cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
-                // prefer teacher's districtName if current is missing or '-'
-                const teacherD = extractDistrictName(r);
-                if ((!cur.districtName || String(cur.districtName).trim() === '-') && teacherD) cur.districtName = teacherD;
                 found = true;
                 break;
               }
             }
-            // If not found, create new entry using teacher's districtName if available
+            // If not found, create new entry
             if (!found) {
               const key = `unknown__${sName}`;
-              const teacherD = extractDistrictName(r);
-              const cur = map.get(key) || { key, districtId: '', districtName: teacherD || '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
+              const cur = map.get(key) || { key, districtId: '', districtName: '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
               const byRole = r.byRole || {};
               Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
               cur.rolesTotal = Number(cur.rolesTotal || 0) + Number(r.total || 0);
-              if ((!cur.districtName || String(cur.districtName).trim() === '-') && teacherD) cur.districtName = teacherD;
               map.set(key, cur);
             }
           });
