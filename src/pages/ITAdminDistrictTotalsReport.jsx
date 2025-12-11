@@ -181,8 +181,7 @@ export default function ITAdminDistrictTotalsReport() {
             }
             // If not found, create new entry
             if (!found) {
-             const key = sName;
-
+              const key = `unknown__${sName}`;
               const cur = map.get(key) || { key, districtId: '', districtName: '-', schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
               const byRole = r.byRole || {};
               Object.keys(byRole).forEach((k) => { cur.byRole[k] = (Number(cur.byRole[k] || 0) + Number(byRole[k] || 0)); });
@@ -203,15 +202,19 @@ export default function ITAdminDistrictTotalsReport() {
 
   const grand = useMemo(() => {
     const res = { boys: 0, girls: 0, roles: {}, total: 0 };
+    let studentsSum = 0;
     // Aggregate counts directly from rows.byRole to avoid role-key mismatches
+    // Also sum `studentsTotal` across rows to include participants with unspecified gender
     (rows || []).forEach(r => {
       res.boys += Number(r.boys || 0);
       res.girls += Number(r.girls || 0);
+      studentsSum += Number(r.studentsTotal || 0);
       const by = r.byRole || {};
       Object.keys(by).forEach((k) => { res.roles[k] = (res.roles[k] || 0) + Number(by[k] || 0); });
     });
     const rolesSum = Object.values(res.roles).reduce((a,b) => a + Number(b || 0), 0);
-    res.total = Number(res.boys || 0) + Number(res.girls || 0) + rolesSum;
+    // Total should be sum of all students (including unspecified gender) plus role counts
+    res.total = Number(studentsSum || 0) + rolesSum;
     return res;
   }, [rows]);
 
