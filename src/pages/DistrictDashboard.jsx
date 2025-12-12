@@ -274,19 +274,25 @@ export default function DistrictDashboard() {
     })();
   }, []);
 
-  // Events
+  // Events (District Events + Other Events)
   const [events, setEvents] = useState([]);
+  const [otherEvents, setOtherEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const loadEvents = async (retry = 1) => {
     try {
       setLoadingEvents(true);
-      const data = await districtUserApi.duListEvents();
-      setEvents(Array.isArray(data) ? data : []);
+      const [eventData, otherEventData] = await Promise.all([
+        districtUserApi.duListEvents().catch(() => []),
+        districtUserApi.duListOtherEvents().catch(() => []),
+      ]);
+      setEvents(Array.isArray(eventData) ? eventData : []);
+      setOtherEvents(Array.isArray(otherEventData) ? otherEventData : []);
     } catch (_) {
       if (retry > 0) {
         setTimeout(() => loadEvents(retry - 1), 500);
       } else {
         setEvents([]);
+        setOtherEvents([]);
       }
     } finally {
       setLoadingEvents(false);
@@ -474,7 +480,7 @@ export default function DistrictDashboard() {
   };
 
   const [teachers, setTeachers] = useState([]);
-  const [teachersGrid, setTeachersGrid] = useState([{ member: "dist_president", name: "", mobile: "", gender: "" }]);
+  const [teachersGrid, setTeachersGrid] = useState([{ member: "dist_president", name: "", mobile: "", gender: "", otherEventId: "" }]);
   const [teachersDirty, setTeachersDirty] = useState(false);
   const [tFormKey, setTFormKey] = useState(0);
   const [showTeacherPreview, setShowTeacherPreview] = useState(false);
@@ -519,6 +525,7 @@ export default function DistrictDashboard() {
         name: sec.name || "",
         mobile: sec.mobile || "",
         gender: (sec.gender || "").toLowerCase(),
+        otherEventId: sec.otherEventId || "",
         _id: sec._id
       });
     }
@@ -538,13 +545,14 @@ export default function DistrictDashboard() {
           name: t.name || "",
           mobile: t.mobile || "",
           gender: (t.gender || "").toLowerCase(),
+          otherEventId: t.otherEventId || "",
           _id: t._id,
         });
       });
 
     // Ensure at least one row exists
     if (!rows.length) {
-      rows.push({ member: "dist_president", name: "", mobile: "", gender: "" });
+      rows.push({ member: "dist_president", name: "", mobile: "", gender: "", otherEventId: "" });
     }
 
     setTeachersGrid(rows);
@@ -568,7 +576,7 @@ export default function DistrictDashboard() {
   };
 
   const addTeacherRow = () => {
-    setTeachersGrid((prev) => [...prev, { member: "dist_president", name: "", mobile: "", gender: "" }]);
+    setTeachersGrid((prev) => [...prev, { member: "dist_president", name: "", mobile: "", gender: "", otherEventId: "" }]);
     setTeachersDirty(true);
   };
   const removeTeacherRow = async(idx) => {
@@ -583,7 +591,14 @@ export default function DistrictDashboard() {
   const gatherTeachersPayload = () => {
     return (teachersGrid || [])
       .filter((t) => (t.name || "").trim())
-      .map((t) => ({ _id: t._id, member: t.member === "other" ? (t.memberOther || "other") : t.member, name: t.name, mobile: t.mobile, gender: t.gender }));
+      .map((t) => ({
+        _id: t._id,
+        member: t.member === "other" ? (t.memberOther || "other") : t.member,
+        name: t.name,
+        mobile: t.mobile,
+        gender: t.gender,
+        otherEventId: t.otherEventId,
+      }));
   };
 
   const handlePreviewTeachers = () => {
@@ -622,7 +637,13 @@ export default function DistrictDashboard() {
       try {
         setSavingTeachers(true);
         const apiCalls = payloads.map((row) => {
-          const body = { member: row.member, name: row.name, mobile: row.mobile, gender: row.gender };
+          const body = {
+            member: row.member,
+            name: row.name,
+            mobile: row.mobile,
+            gender: row.gender,
+            otherEventId: row.otherEventId || "",
+          };
           return row._id
             ? districtUserApi.duUpdateTeacher(row._id, body)
             : districtUserApi.duCreateTeacher(body);
@@ -785,6 +806,7 @@ export default function DistrictDashboard() {
                 <th style={{...S.th, minWidth: '180px'}}>Name of Participant</th>
                 <th style={{...S.th, minWidth: '130px'}}>Mobile No</th>
                 <th style={{...S.th, minWidth: '120px'}}>Gents/Ladies</th>
+                <th style={{...S.th, minWidth: '160px'}}>Event</th>
                 <th style={{...S.th, width: '100px'}}></th>
               </tr>
             </thead>
@@ -827,6 +849,42 @@ export default function DistrictDashboard() {
                       <option value="boy">Gents</option>
                       <option value="girl">Ladies</option>
                     </Select>
+                  </td>
+                  <td style={S.td}>
+                    {(() => {
+                      // Base filter by audience
+                      const filteredByAudience = (otherEvents || []).filter((ev) => {
+                        const isParents = (row.member || "").toLowerCase() === "parents";
+                        if (isParents) return !!ev.forParents;
+                        return !!ev.forDistrict; // default: district-level gurus see district-targeted events
+                      });
+
+                      // Exclude events already selected in other rows (unique assignment)
+                      const filteredUnique = filteredByAudience.filter((ev) => {
+                        const idStr = String(ev._id);
+                        const isUsedElsewhere = (teachersGrid || []).some((t, i2) => {
+                          if (i2 === idx) return false;
+                          if (!t.otherEventId) return false;
+                          return String(t.otherEventId) === idStr;
+                        });
+                        // Allow if not used in another row
+                        return !isUsedElsewhere;
+                      });
+
+                      const currentValue = row.otherEventId || "";
+
+                      return (
+                        <Select
+                          value={currentValue}
+                          onChange={(e) => setTGrid(idx, "otherEventId", e.target.value)}
+                        >
+                          <option value="">Select Event</option>
+                          {filteredUnique.map((ev) => (
+                            <option key={ev._id} value={ev._id}>{ev.title}</option>
+                          ))}
+                        </Select>
+                      );
+                    })()}
                   </td>
                   <td style={S.td}>
                     {idx > 0 && (
@@ -943,20 +1001,29 @@ export default function DistrictDashboard() {
                   <th style={S.th}>Name</th>
                   <th style={S.th}>Mobile</th>
                   <th style={S.th}>G/L</th>
+                  <th style={S.th}>Event</th>
                 </tr>
               </thead>
               <tbody>
-                {gatherTeachersPayload().map((t, idx) => (
-                  <tr key={idx}>
-                    <td style={S.td}>{idx + 1}</td>
-                    <td style={S.td}>
-                      {memberLabels[t.member] || t.member}
-                    </td>
-                    <td style={S.td}>{t.name}</td>
-                    <td style={S.td}>{t.mobile}</td>
-                    <td style={S.td}>{t.gender==="boy"?"Gents":"Ladies"}</td>
-                  </tr>
-                ))}
+                {gatherTeachersPayload().map((t, idx) => {
+                  const evTitle = (() => {
+                    if (!t.otherEventId) return "-";
+                    const ev = (otherEvents || []).find((e) => String(e._id) === String(t.otherEventId));
+                    return ev?.title || "-";
+                  })();
+                  return (
+                    <tr key={idx}>
+                      <td style={S.td}>{idx + 1}</td>
+                      <td style={S.td}>
+                        {memberLabels[t.member] || t.member}
+                      </td>
+                      <td style={S.td}>{t.name}</td>
+                      <td style={S.td}>{t.mobile}</td>
+                      <td style={S.td}>{t.gender==="boy"?"Gents":"Ladies"}</td>
+                      <td style={S.td}>{evTitle}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -6,6 +6,12 @@ export const duListEvents = async () => {
   return data;
 };
 
+// District user: Other Events (admin-level, view-only)
+export const duListOtherEvents = async () => {
+  const { data } = await API.get("/api/district-user/other-events");
+  return data;
+};
+
 // District user: Participants
 export const duListParticipants = async (eventId) => {
   const params = eventId ? { eventId } : {};
@@ -45,6 +51,7 @@ export const duDeleteTeacher = async (id) => {
 
 export default {
   duListEvents,
+  duListOtherEvents,
   duListParticipants,
   duCreateParticipant,
   duUpdateParticipant,

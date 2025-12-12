@@ -83,6 +83,27 @@ export const adminDeleteDistrictEvent = async (id) => {
   return data;
 };
 
+// Other Events (admin)
+export const adminListOtherEvents = async () => {
+  const { data } = await API.get(`/api/admin/other-events`);
+  return data;
+};
+
+export const adminCreateOtherEvent = async (payload) => {
+  const { data } = await API.post(`/api/admin/other-events`, payload);
+  return data;
+};
+
+export const adminUpdateOtherEvent = async (id, payload) => {
+  const { data } = await API.patch(`/api/admin/other-events/${id}`, payload);
+  return data;
+};
+
+export const adminDeleteOtherEvent = async (id) => {
+  const { data } = await API.delete(`/api/admin/other-events/${id}`);
+  return data;
+};
+
 // Announcements (admin)
 export const adminListAnnouncements = async () => {
   const { data } = await API.get(`/api/admin/announcements`);
@@ -115,4 +136,4 @@ export const saveEvaluationFormat = async (payload) => {
   return data;
 };
 
-export default { listUsers, approveUser, resetUserPassword, updateUser, deleteUser, createSchoolRole, updateSchoolRole, deleteSchoolRole, adminListEvents, adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminListDistrictEvents, adminCreateDistrictEvent, adminUpdateDistrictEvent, adminDeleteDistrictEvent, adminListAnnouncements, adminCreateAnnouncement, adminUpdateAnnouncement, adminDeleteAnnouncement };
+export default { listUsers, approveUser, resetUserPassword, updateUser, deleteUser, createSchoolRole, updateSchoolRole, deleteSchoolRole, adminListEvents, adminCreateEvent, adminUpdateEvent, adminDeleteEvent, adminListDistrictEvents, adminCreateDistrictEvent, adminUpdateDistrictEvent, adminDeleteDistrictEvent, adminListOtherEvents, adminCreateOtherEvent, adminUpdateOtherEvent, adminDeleteOtherEvent, adminListAnnouncements, adminCreateAnnouncement, adminUpdateAnnouncement, adminDeleteAnnouncement };

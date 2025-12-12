@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 
 import {
   listEvents,
+  listOtherEvents,
   listParticipants,
   createParticipant,
   updateParticipant,
@@ -364,7 +365,8 @@ export default function SchoolDashboard() {
   const nameInputRef = useRef(null);
 
   // Events / Teachers
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState([]); // school events
+  const [otherEvents, setOtherEvents] = useState([]); // admin Other Events
   const [teachers, setTeachers] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -431,8 +433,12 @@ export default function SchoolDashboard() {
   const refreshEvents = async () => {
     try {
       setLoadingEvents(true);
-      const data = await listEvents();
+      const [data, other] = await Promise.all([
+        listEvents().catch(() => []),
+        listOtherEvents().catch(() => []),
+      ]);
       setEvents(data || []);
+      setOtherEvents(other || []);
       // toast.success("Events refreshed");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to refresh events");
@@ -841,9 +847,9 @@ export default function SchoolDashboard() {
   // ---------- TEACHERS (New Form Layout) ----------
   const [teachersDirty, setTeachersDirty] = useState(false);
   const [teachersGrid, setTeachersGrid] = useState({
-    // dynamic rows; each: { sl, member, designation, name, mobile, gender }
+    // dynamic rows; each: { sl, member, designation, name, mobile, gender, otherEventId }
     others: [
-      { sl: 1, member: "secretary_manager", designation: "", name: "", mobile: "", gender: "" },
+      { sl: 1, member: "secretary_manager", designation: "", name: "", mobile: "", gender: "", otherEventId: "" },
     ],
   });
   const [showTeacherPreview, setShowTeacherPreview] = useState(false);
@@ -853,7 +859,7 @@ export default function SchoolDashboard() {
   const resetTeacherGrid = () => {
     setTeachersGrid({
       others: [
-        { sl: 1, member: "secretary_manager", designation: "", name: "", mobile: "", gender: "" },
+        { sl: 1, member: "secretary_manager", designation: "", name: "", mobile: "", gender: "", otherEventId: "" },
       ],
     });
     setTFormKey((k) => k + 1);
@@ -880,7 +886,7 @@ export default function SchoolDashboard() {
     setTeachersGrid((prev) => {
       const copy = Array.isArray(prev.others) ? [...prev.others] : [];
       const nextSl = (copy[copy.length - 1]?.sl || 0) + 1;
-      copy.push({ sl: nextSl, member: "mc_member", designation: "", name: "", mobile: "", gender: "" });
+      copy.push({ sl: nextSl, member: "mc_member", designation: "", name: "", mobile: "", gender: "", otherEventId: "" });
       const next = { ...prev, others: copy };
       try { localStorage.setItem("school_teachers_grid", JSON.stringify(next)); } catch (_) {}
       return next;
@@ -936,7 +942,7 @@ export default function SchoolDashboard() {
       const list = Array.isArray(teachers) ? teachers : [];
       const allowed = new Set(["secretary_manager", "mc_member", "principal", "teacher", "other"]);
       const sec = list.find((t) => (t.member || "").toLowerCase() === "secretary_manager");
-      if (sec) rows.push({ sl: rows.length + 1, member: "secretary_manager", designation: "", name: sec.name || "", mobile: sec.mobile || "", gender: (sec.gender || "").toLowerCase(), _id: sec._id });
+      if (sec) rows.push({ sl: rows.length + 1, member: "secretary_manager", designation: "", name: sec.name || "", mobile: sec.mobile || "", gender: (sec.gender || "").toLowerCase(), otherEventId: sec.otherEventId || "", _id: sec._id });
       // push all other teachers in the order received
       list
         .filter((t) => (t.member || "").toLowerCase() !== "secretary_manager")
@@ -945,7 +951,7 @@ export default function SchoolDashboard() {
           const isKnown = allowed.has(rawMember);
           const member = isKnown ? rawMember : "other";
           const designation = isKnown ? "" : t.member || "";
-          rows.push({ sl: rows.length + 1, member, designation, name: t.name || "", mobile: t.mobile || "", gender: (t.gender || "").toLowerCase(), _id: t._id });
+          rows.push({ sl: rows.length + 1, member, designation, name: t.name || "", mobile: t.mobile || "", gender: (t.gender || "").toLowerCase(), otherEventId: t.otherEventId || "", _id: t._id });
         });
       if (rows.length === 0) {
         rows.push({ sl: 1, member: "secretary_manager", designation: "", name: "", mobile: "", gender: "" });
@@ -977,6 +983,7 @@ export default function SchoolDashboard() {
       const selected = (row.member || "").toLowerCase();
       const computedMember = selected === "other" && (row.designation || "").trim() ? row.designation : selected;
       const payload = { member: computedMember, name, mobile, gender };
+      if (row.otherEventId) payload.otherEventId = row.otherEventId;
       if (row._id) payload._id = row._id;
       if (selected === "other" && row.designation) payload.designation = row.designation;
       list.push(payload);
@@ -1029,7 +1036,7 @@ export default function SchoolDashboard() {
             usedIdx.add(candidates[0].i);
           }
         }
-        const body = { name: p.name, mobile: p.mobile, member: p.member, gender: p.gender, eventId: p.eventId || "" };
+        const body = { name: p.name, mobile: p.mobile, member: p.member, gender: p.gender, eventId: p.eventId || "", otherEventId: p.otherEventId || "" };
         if (match && match._id) await updateTeacher(match._id, body);
         else await createTeacher(body);
       }
@@ -1210,7 +1217,7 @@ export default function SchoolDashboard() {
           paddingBottom: '10px',
           marginBottom: '16px'
         }}>
-          <TableShell columns={[{ label: "Sl. no" }, { label: "Designation" }, { label: "Name Of the Participant" }, { label: "Mobile No" }, { label: "Gents/Ladies" }, { label: "" }]}>
+          <TableShell columns={[{ label: "Sl. no" }, { label: "Designation" }, { label: "Event" }, { label: "Name Of the Participant" }, { label: "Mobile No" }, { label: "Gents/Ladies" }, { label: "" }]}>
             {(Array.isArray(teachersGrid.others) ? teachersGrid.others : []).map((row, idx) => (
             <tr key={idx}>
               <td style={S.td}>{row.sl}</td>
@@ -1226,41 +1233,71 @@ export default function SchoolDashboard() {
                   <Input style={{ marginTop: 6 }} type="text" placeholder="Enter designation" defaultValue={row.designation || ""} onBlur={(e) => setTeacherGridValue("others", idx, "designation", e.target.value)} />
                 )}
               </td>
-             <td style={S.td}>
-            {/* Name of the Participant (previously Mobile No) */}
-            <Input
-              type="text"
-              placeholder="Enter full name"
-              defaultValue={row.name || ""}
-              onBlur={(e) => setTeacherGridValue("others", idx, "name", e.target.value)}
-            />
-          </td>
+              <td style={S.td}>
+                {(() => {
+                  // Only events marked forSchool in admin
+                  const filteredByAudience = (otherEvents || []).filter((ev) => !!ev.forSchool);
 
-          <td style={S.td}>
-            {/* Mobile No (previously Name of the Participant) */}
-           <Input
-            type="tel"
-            placeholder="Enter mobile"
-            defaultValue={row.mobile || ""}
-            maxLength={10}
-            onInput={(e) => {
-              // remove any non-numeric characters (also works for paste)
-              e.target.value = e.target.value.replace(/\D/g, "");
-            }}
-            onBlur={(e) => {
-              const value = e.target.value;
+                  // Exclude events already selected in other teacher rows (unique assignment)
+                  const filteredUnique = filteredByAudience.filter((ev) => {
+                    const idStr = String(ev._id);
+                    const isUsedElsewhere = (teachersGrid?.others || []).some((t, i2) => {
+                      if (i2 === idx) return false; // ignore current row
+                      if (!t.otherEventId) return false;
+                      return String(t.otherEventId) === idStr;
+                    });
+                    return !isUsedElsewhere;
+                  });
 
-              if (value.length !== 10) {
-                alert("Mobile number must be exactly 10 digits");
-                return;
-              }
+                  const currentValue = row.otherEventId || "";
 
-              setTeacherGridValue("others", idx, "mobile", value);
-            }}
-          />
+                  return (
+                    <Select
+                      value={currentValue}
+                      onChange={(e) => setTeacherGridValue("others", idx, "otherEventId", e.target.value)}
+                    >
+                      <option value="">Select Event</option>
+                      {filteredUnique.map((ev) => (
+                        <option key={ev._id} value={ev._id}>
+                          {ev.title}
+                        </option>
+                      ))}
+                    </Select>
+                  );
+                })()}
+              </td>
+              <td style={S.td}>
+                {/* Name of the Participant (previously Mobile No) */}
+                <Input
+                  type="text"
+                  placeholder="Enter full name"
+                  defaultValue={row.name || ""}
+                  onBlur={(e) => setTeacherGridValue("others", idx, "name", e.target.value)}
+                />
+              </td>
+              <td style={S.td}>
+                {/* Mobile No (previously Name of the Participant) */}
+               <Input
+                type="tel"
+                placeholder="Enter mobile"
+                defaultValue={row.mobile || ""}
+                maxLength={10}
+                onInput={(e) => {
+                  // remove any non-numeric characters (also works for paste)
+                  e.target.value = e.target.value.replace(/\D/g, "");
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value;
 
-          </td>
+                  if (value.length !== 10) {
+                    alert("Mobile number must be exactly 10 digits");
+                    return;
+                  }
 
+                  setTeacherGridValue("others", idx, "mobile", value);
+                }}
+              />
+              </td>
               <td style={S.td}>
                 <select
                   value={row.gender || ""}
@@ -1472,21 +1509,21 @@ export default function SchoolDashboard() {
             onClear={() => setShowTeacherPreview(false)}
             onApply={confirmSaveTeachers}
           >
-            <TableShell columns={[{ label: "Sl No" }, { label: "Designation" }, { label: "Name" }, { label: "Mobile" }, { label: "Gender" }]}> 
+            <TableShell columns={[{ label: "Sl No" }, { label: "Designation" }, { label: "Event" }, { label: "Name" }, { label: "Mobile" }, { label: "Gender" }]}> 
               {(() => {
                 const { list: payloads, hasPartialRow } = gatherTeachersPayload();
                 if (hasPartialRow) {
                   alert("For each teacher row, if you fill any field (Name, Mobile, or Gender), then all of them are mandatory.");
                   return (
                     <tr>
-                      <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={5}>Please complete or clear all partially filled rows, then open preview again.</td>
+                      <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={6}>Please complete or clear all partially filled rows, then open preview again.</td>
                     </tr>
                   );
                 }
                 if (payloads.length === 0) {
                   return (
                     <tr>
-                      <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={5}>No entries</td>
+                      <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={6}>No entries</td>
                     </tr>
                   );
                 }
@@ -1503,10 +1540,18 @@ export default function SchoolDashboard() {
                     ? "Principal"
                     : p.member);
 
+                  const eventTitle = (() => {
+                    const id = p.otherEventId;
+                    if (!id) return "-";
+                    const ev = (otherEvents || []).find((e) => String(e._id) === String(id));
+                    return ev?.title || "-";
+                  })();
+
                   return (
                     <tr key={idx}>
                       <td style={S.td}>{idx + 1}</td>
                       <td style={S.td}>{label}</td>
+                      <td style={S.td}>{eventTitle}</td>
                       <td style={S.td}>{p.name}</td>
                       <td style={S.td}>{p.mobile}</td>
                       <td style={S.td}>{p.gender==="boy"?"Gents":"Ladies"}</td>

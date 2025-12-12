@@ -2,10 +2,12 @@ import API from "./axiosInstance";
 
 // Events
 export const listEvents = () => API.get("/api/school/events").then(r => r.data);
+export const listOtherEvents = () => API.get("/api/school/other-events").then(r => r.data);
 export const getEvent = (id) => API.get(`/api/school/events/${id}`).then(r => r.data);
 export const createEvent = (payload) => API.post("/api/school/events", payload).then(r => r.data);
 export const updateEvent = (id, payload) => API.patch(`/api/school/events/${id}`, payload).then(r => r.data);
 export const deleteEvent = (id) => API.delete(`/api/school/events/${id}`).then(r => r.data);
+
 // Participants
 export const listParticipants = (eventId) => API.get("/api/school/participants", { params: eventId ? { eventId } : {} }).then(r => r.data);
 export const createParticipant = (payload) => API.post("/api/school/participants", payload).then(r => r.data);

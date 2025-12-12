@@ -113,11 +113,26 @@ export default function ITAdminTeachers() {
       setLoading(true);
       setError("");
       const data = await itListTeachers({ scope, districtId, schoolName, eventId, present, frozen, q });
-      setItems(Array.isArray(data) ? data : []);
+      
+      // Create a map of event IDs to their titles
+      const eventMap = {};
+      events.forEach(event => {
+        eventMap[event._id] = event.title;
+      });
+      
+      // Map otherEventId to eventTitle using the eventMap
+      const processedData = Array.isArray(data) ? data.map(item => ({
+        ...item,
+        eventTitle: item.eventTitle || (item.otherEventId ? (eventMap[item.otherEventId] || `Event ${item.otherEventId}`) : '')
+      })) : [];
+      
+      setItems(processedData);
     } catch (e) {
       setItems([]);
       setError(e?.response?.data?.message || "Failed to load teachers");
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false);
+    }
   };
 
   const onResetFilters = () => {
@@ -184,8 +199,8 @@ export default function ITAdminTeachers() {
           <label><strong>Gender</strong></label>
           <select id="swal-gender" class="swal2-select">
             <option value="">Select</option>
-            <option value="boy">Boy</option>
-            <option value="girl">Girl</option>
+            <option value="boy">Gents</option>
+            <option value="girl">Ladies</option>
           </select>
         </div>
       </div>
@@ -557,6 +572,7 @@ export default function ITAdminTeachers() {
       "Phone",
       "Role",
       "Gender",
+      "Event",
       "Present",
       "Frozen"
     ];
@@ -567,12 +583,8 @@ export default function ITAdminTeachers() {
       r.name || "",
       r.phone || "",
       getRoleText(r) || "",
-     r.gender === "boy"
-  ? "Gents"
-  : r.gender === "girl"
-  ? "Ladies"
-  : "",
-
+      r.gender === "boy" ? "Gents" : r.gender === "girl" ? "Ladies" : "",
+      r.eventTitle || "",
       r.present ? "Yes" : "No",
       r.frozen ? "Yes" : "No",
     ]);
@@ -595,15 +607,16 @@ export default function ITAdminTeachers() {
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const headers = [
-      "Sl. No",
-      "District",
-      "School",
-      "Name",
-      "Phone",
-      "Role",
-      "Gender",
-      "Present",
-      "Frozen"
+        "Sl. No",
+        "District",
+        "School",
+        "Name",
+        "Phone",
+        "Role",
+        "Gender",
+        "Event",
+        "Present",
+        "Frozen"
       ];
       const body = filtered.map((r, i) => [
         String(i + 1),
@@ -612,12 +625,8 @@ export default function ITAdminTeachers() {
         r.name || "",
         r.phone || "",
         getRoleText(r) || "",
-       r.gender === "boy"
-  ? "Gents"
-  : r.gender === "girl"
-  ? "Ladies"
-  : "",
-
+        r.gender === "boy" ? "Gents" : r.gender === "girl" ? "Ladies" : "",
+        r.eventTitle || "",
         r.present ? "Yes" : "No",
         r.frozen ? "Yes" : "No",
       ]);
@@ -770,6 +779,7 @@ div.swal2-container .swal2-checkbox {
                   <th style={{width:"10px"}}>Phone</th>
                   <th style={{width:"10px"}}>Role</th>
                   <th style={{width:"10px"}}>Gender</th>
+                  <th style={{width:"15px"}}>Event</th>
                   <th style={{width:"10px"}}>Present</th>
                   <th style={{width:"10px"}}>Frozen</th>
                   <th style={{width:"5px"}}>Actions</th>
@@ -785,6 +795,7 @@ div.swal2-container .swal2-checkbox {
                     <td>{r.phone || "-"}</td>
                     <td>{getRoleText(r) || "-"}</td>
                     <td>{r.gender==="boy"?"Gents":"Ladies" || "-"}</td>
+                    <td>{r.eventTitle || "-"}</td>
                     <td>
                       <input type="checkbox" checked={!!r.present} disabled={!!r.frozen} onChange={() => onTogglePresent(r)} />
                     </td>

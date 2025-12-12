@@ -16,14 +16,14 @@ export default function AdminEvents() {
     { key: "settings", label: "School Roles", icon: <FaCog /> },
   ];
 
-  const [tab, setTab] = useState("school"); // 'school' | 'district'
+  const [tab, setTab] = useState("school"); // 'school' | 'district' | 'other'
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [form, setForm] = useState({ id: "", title: "", date: "", gender: "both", audience: "both", isGroupEvent: false, participantCount: 2 });
+  const [form, setForm] = useState({ id: "", title: "", date: "", gender: "both", audience: "both", isGroupEvent: false, participantCount: 2, forSchool: false, forDistrict: false, forParents: false, otherAudience: "" });
   const [q, setQ] = useState("");
 
   // district/school selectors
@@ -39,7 +39,14 @@ export default function AdminEvents() {
     try {
       setLoading(true);
       setError("");
-      const data = tab === "district" ? await adminApi.adminListDistrictEvents() : await adminApi.adminListEvents();
+      let data;
+      if (tab === "district") {
+        data = await adminApi.adminListDistrictEvents();
+      } else if (tab === "other") {
+        data = await adminApi.adminListOtherEvents();
+      } else {
+        data = await adminApi.adminListEvents();
+      }
       setEvents(Array.isArray(data) ? data : []);
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load events");
@@ -77,6 +84,8 @@ export default function AdminEvents() {
     setForm(
       tab === "district"
         ? { id: "", title: "", date: "", gender: "both" }
+        : tab === "other"
+        ? { id: "", title: "", date: "", gender: "both", forSchool: false, forDistrict: false, forParents: false, otherAudience: "" }
         : { id: "", title: "", date: "", gender: "both", audience: "both", isGroupEvent: false, participantCount: 2 }
     );
     setShowModal(true);
@@ -92,6 +101,26 @@ export default function AdminEvents() {
             date: ev.date ? String(ev.date).slice(0, 10) : "",
             gender: ev.gender || "both",
           }
+        : tab === "other"
+        ? (() => {
+            const forSchool = !!ev.forSchool;
+            const forDistrict = !!ev.forDistrict;
+            const forParents = !!ev.forParents;
+            let otherAudience = "";
+            if (forSchool) otherAudience = "school";
+            else if (forDistrict) otherAudience = "district";
+            else if (forParents) otherAudience = "parents";
+            return {
+              id: ev._id,
+              title: ev.title || "",
+              date: ev.date ? String(ev.date).slice(0, 10) : "",
+              gender: ev.gender || "both",
+              forSchool,
+              forDistrict,
+              forParents,
+              otherAudience,
+            };
+          })()
         : {
             id: ev._id,
             title: ev.title || "",
@@ -153,7 +182,6 @@ export default function AdminEvents() {
       const title = (form.title || "").trim();
 
       // Enforce unique event title (case-insensitive), excluding current editing id
-     // Enforce unique event title (case-insensitive), excluding current editing id
    // Normalize values
       const normalizedTitle = String(title || "").trim().toLowerCase();
       const normalizedAudience = String(form.audience || "").toLowerCase();
@@ -165,8 +193,8 @@ export default function AdminEvents() {
         const evTitle = String(ev.title || "").toLowerCase();
         const evAudience = String(ev.audience || "").toLowerCase();
 
-        // District tab → audience not considered
-        if (tab === "district") {
+        // District / Other tab → audience not considered
+        if (tab === "district" || tab === "other") {
           return evTitle === normalizedTitle;
         }
 
@@ -179,12 +207,22 @@ export default function AdminEvents() {
         return;
       }
 
+
       const payload =
         tab === "district"
           ? {
               title,
               date: form.date || null,
               gender: form.gender || "both",
+            }
+          : tab === "other"
+          ? {
+              title,
+              date: form.date || null,
+              gender: form.gender || "both",
+              forSchool: !!form.forSchool,
+              forDistrict: !!form.forDistrict,
+              forParents: !!form.forParents,
             }
           : {
               title,
@@ -197,6 +235,9 @@ export default function AdminEvents() {
       if (tab === "district") {
         if (isEdit && form.id) await adminApi.adminUpdateDistrictEvent(form.id, payload);
         else await adminApi.adminCreateDistrictEvent(payload);
+      } else if (tab === "other") {
+        if (isEdit && form.id) await adminApi.adminUpdateOtherEvent(form.id, payload);
+        else await adminApi.adminCreateOtherEvent(payload);
       } else {
         if (isEdit && form.id) await adminApi.adminUpdateEvent(form.id, payload);
         else await adminApi.adminCreateEvent(payload);
@@ -213,6 +254,7 @@ export default function AdminEvents() {
     if (!ok) return;
     try {
       if (tab === "district") await adminApi.adminDeleteDistrictEvent(id);
+      else if (tab === "other") await adminApi.adminDeleteOtherEvent(id);
       else await adminApi.adminDeleteEvent(id);
       await load();
     } catch (er) {
@@ -262,6 +304,7 @@ export default function AdminEvents() {
             <div style={{ display: "inline-flex", gap: 8, marginLeft: 8 }}>
               <button className={`btn ${tab === "school" ? "primary" : ""}`} onClick={() => setTab("school")}>School Events</button>
               <button className={`btn ${tab === "district" ? "primary" : ""}`} onClick={() => setTab("district")}>District Events</button>
+              <button className={`btn ${tab === "other" ? "primary" : ""}`} onClick={() => setTab("other")}>Other Events</button>
             </div>
           </div>
           <button className="btn primary" onClick={openCreate} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -287,6 +330,7 @@ export default function AdminEvents() {
                   <th>Date</th>
                   <th>Gender</th>
                   {tab === "school" && <th>Audience</th>}
+                  {tab === "other" && <th>Audience</th>}
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -325,6 +369,28 @@ export default function AdminEvents() {
                             fontWeight: 500
                           }}>
                             {ev.audience || 'N/A'}
+                          </span>
+                        </td>
+                      )}
+                      {tab === "other" && (
+                        <td>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: '#f0f5ff',
+                            color: '#2f54eb',
+                            textTransform: 'capitalize',
+                            fontWeight: 500,
+                          }}>
+                            {(() => {
+                              const fs = !!ev.forSchool;
+                              const fd = !!ev.forDistrict;
+                              const fp = !!ev.forParents;
+                              if (fs) return 'School';
+                              if (fd) return 'District';
+                              if (fp) return 'Parents';
+                              return 'N/A';
+                            })()}
                           </span>
                         </td>
                       )}
@@ -403,6 +469,30 @@ export default function AdminEvents() {
                         {formErrors.participantCount && <div className="error-message">{formErrors.participantCount}</div>}
                       </>
                     )}
+                  </>
+                )}
+
+                {tab === "other" && (
+                  <>
+                    <label>Audience</label>
+                    <select
+                      value={form.otherAudience || ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setForm({
+                          ...form,
+                          otherAudience: v,
+                          forSchool: v === "school",
+                          forDistrict: v === "district",
+                          forParents: v === "parents",
+                        });
+                      }}
+                    >
+                      <option value="">Select Audience</option>
+                      <option value="school">School</option>
+                      <option value="district">District</option>
+                      <option value="parents">Parents</option>
+                    </select>
                   </>
                 )}
 
