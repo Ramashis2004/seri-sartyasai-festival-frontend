@@ -101,18 +101,24 @@ export default function ITAdminDistrictTotalsReport() {
           const tRoles = Array.isArray(tData?.roles) ? tData.roles : [];
           const tRows = Array.isArray(tData?.rows) ? tData.rows : [];
           const map = new Map();
+          // Nominations view: count each student only once per school
           (Array.isArray(pList) ? pList : []).forEach((p) => {
             const dId = String(p.districtId || '');
             const dName = p.districtName || '-';
             const sName = p.schoolName || '-';
             if (!dId || !sName) return;
             const key = `${dId}__${sName}`;
-            const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0 };
-            const isBoy = String(p.gender || '').toLowerCase() === 'boy';
-            const isGirl = String(p.gender || '').toLowerCase() === 'girl';
-            cur.boys += isBoy ? 1 : 0;
-            cur.girls += isGirl ? 1 : 0;
-            cur.studentsTotal += 1;
+            const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boys: 0, girls: 0, studentsTotal: 0, byRole: {}, rolesTotal: 0, _unique: new Set() };
+            // Build a composite student key to de-duplicate across events
+            const studentKey = `${String(p.name || '').trim().toLowerCase()}__${String(p.gender || '').trim().toLowerCase()}__${String(p.className || '').trim().toLowerCase()}`;
+            if (!cur._unique.has(studentKey)) {
+              cur._unique.add(studentKey);
+              const isBoy = String(p.gender || '').toLowerCase() === 'boy';
+              const isGirl = String(p.gender || '').toLowerCase() === 'girl';
+              cur.boys += isBoy ? 1 : 0;
+              cur.girls += isGirl ? 1 : 0;
+              cur.studentsTotal += 1;
+            }
             map.set(key, cur);
           });
           tRows.forEach((r) => {
@@ -138,7 +144,10 @@ export default function ITAdminDistrictTotalsReport() {
               map.set(key, cur);
             }
           });
-          const finalRows = Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
+          // Remove helper sets before rendering and sort
+          const finalRows = Array.from(map.values()).map(r => {
+            const { _unique, ...rest } = r; return rest;
+          }).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
           const combinedRoleKeys = Array.from(new Set([...(tRoles || []), ...finalRows.flatMap(r => Object.keys(r.byRole || {}))]));
           setRoles(combinedRoleKeys);
           setRows(finalRows);
