@@ -93,37 +93,30 @@ export default function ITAdminTeachers() {
     })();
   }, [districtId]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [schoolEvents, districtEvents] = await Promise.all([
-          adminApi.adminListEvents().catch(() => []),
-          adminApi.adminListDistrictEvents().catch(() => []),
-        ]);
-        setEvents([
-          ...schoolEvents.map((e) => ({ _id: e._id, title: e.title, source: "school" })),
-          ...districtEvents.map((e) => ({ _id: e._id, title: e.title, source: "district" })),
-        ]);
-      } catch { setEvents([]); }
-    })();
-  }, []);
+  // Build Other Events list from loaded items (supports both otherEventId and eventId; falls back to title)
+  const otherEventsOptions = useMemo(() => {
+    const m = new Map();
+    (items || []).forEach((it) => {
+      const rawId = it.otherEventId ?? it.eventId;
+      const title = it.eventTitle || it.event || it.eventName || (rawId ? `Event ${rawId}` : "");
+      if (!title) return;
+      const value = rawId != null && rawId !== '' ? `id:${String(rawId)}` : `title:${String(title)}`;
+      if (!m.has(value)) m.set(value, String(title));
+    });
+    return Array.from(m.entries()).map(([value, title]) => ({ _id: value, title }));
+  }, [items]);
 
   const load = async () => {
     try {
       setLoading(true);
       setError("");
-      const data = await itListTeachers({ scope, districtId, schoolName, eventId, present, frozen, q });
+      // Do NOT pass eventId to backend, we filter Other Events client-side
+      const data = await itListTeachers({ scope, districtId, schoolName, present, frozen, q });
       
-      // Create a map of event IDs to their titles
-      const eventMap = {};
-      events.forEach(event => {
-        eventMap[event._id] = event.title;
-      });
-      
-      // Map otherEventId to eventTitle using the eventMap
+      // Ensure each record has an eventTitle; fall back to its own event id
       const processedData = Array.isArray(data) ? data.map(item => ({
         ...item,
-        eventTitle: item.eventTitle || (item.otherEventId ? (eventMap[item.otherEventId] || `Event ${item.otherEventId}`) : '')
+        eventTitle: item.eventTitle || (item.otherEventId ? `Event ${item.otherEventId}` : (item.eventId ? `Event ${item.eventId}` : ''))
       })) : [];
       
       setItems(processedData);
@@ -304,7 +297,8 @@ export default function ITAdminTeachers() {
     }
   };
 
-  useEffect(() => { load(); }, [scope, districtId, schoolName, eventId, present, frozen, q]);
+  // Load from server when non-event filters change. Event filtering is client-side.
+  useEffect(() => { load(); }, [scope, districtId, schoolName, present, frozen, q]);
 
   // Show scroll-to-top button on scroll
   useEffect(() => {
@@ -543,8 +537,23 @@ export default function ITAdminTeachers() {
   const filtered = useMemo(() => {
     let arr = items;
     if (role) arr = arr.filter(r => getRoleText(r).toLowerCase() === role.toLowerCase());
+    if (eventId) {
+      arr = arr.filter(r => {
+        const rid = r.otherEventId ?? r.eventId;
+        const rtitle = (r.eventTitle || r.event || r.eventName || '').trim().toLowerCase();
+        if (eventId.startsWith('id:')) {
+          const target = eventId.slice(3);
+          return String(rid || '') === String(target);
+        }
+        if (eventId.startsWith('title:')) {
+          const target = eventId.slice(6).trim().toLowerCase();
+          return rtitle && rtitle === target;
+        }
+        return false;
+      });
+    }
     return arr;
-  }, [items, role]);
+  }, [items, role, eventId]);
 
   const onToggleFreezeRow = async (row) => {
     try {
@@ -733,10 +742,12 @@ div.swal2-container .swal2-checkbox {
             <option value="">All Schools</option>
             {schools.map((s) => <option key={s._id} value={s.schoolName}>{s.schoolName}</option>)}
           </select>
-          {/* <select value={eventId} onChange={(e) => setEventId(e.target.value)}>
-            <option value="">All Events</option>
-            {events.map((ev) => <option key={`${ev.source}_${ev._id}`} value={ev._id}>{ev.title}</option>)}
-          </select> */}
+          <select value={eventId} onChange={(e) => setEventId(e.target.value)}>
+            <option value="">All Other Events</option>
+            {otherEventsOptions.map((ev) => (
+              <option key={`other_${ev._id}`} value={ev._id}>{ev.title}</option>
+            ))}
+          </select>
           <select value={present} onChange={(e) => setPresent(e.target.value)}>
             <option value="">Attendance</option>
             <option value="true">Present</option>
