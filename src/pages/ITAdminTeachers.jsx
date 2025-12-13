@@ -146,55 +146,53 @@ export default function ITAdminTeachers() {
     ];
 
     const typeHtml = (selected = 'school') => `
-      <div style="text-align: left;">
-        <div class="swal2-form-row">
-          <label><strong>Participant Type</strong></label>
-          <select id="swal-type" class="swal2-select">
-            ${typeOptions.map(o => `<option value="${o.value}" ${selected===o.value?'selected':''}>${o.label}</option>`).join('')}
-          </select>
-        </div>
-
-        <div id="row-district" class="swal2-form-row">
-          <label><strong>Select District</strong></label>
-          <select id="swal-district" class="swal2-select">
-            <option value="">Select District</option>
-            ${districts.map(d => `<option value="${d._id}">${d.districtName}</option>`).join('')}
-          </select>
-        </div>
-
-        <div id="row-school" class="swal2-form-row" style="display:${selected==='school'?'block':'none'};">
-          <label><strong>Select School</strong></label>
-          <select id="swal-school" class="swal2-select">
-            <option value="">Select School</option>
-          </select>
-        </div>
-
-        <div class="swal2-form-row">
-          <label><strong>Designation</strong></label>
-          <select id="swal-role" class="swal2-select">
-            ${(ROLE_OPTIONS.teacher).map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
-          </select>
-        </div>
-        <div id="row-other-role" class="swal2-form-row" style="display:none;">
-          <label><strong>Specify Role</strong></label>
-          <input id="swal-other-role" class="swal2-input" placeholder="Enter role" />
-        </div>
-
-        <div class="swal2-form-row">
-          <label><strong>Name</strong></label>
-          <input id="swal-name" class="swal2-input" placeholder="Name" />
-        </div>
-        <div class="swal2-form-row">
-          <label><strong>Mobile No</strong></label>
-          <input id="swal-phone" class="swal2-input" placeholder="Mobile" inputmode="numeric" pattern="\\d{10}" maxlength="10" />
-        </div>
-        <div class="swal2-form-row">
-          <label><strong>Gender</strong></label>
-          <select id="swal-gender" class="swal2-select">
-            <option value="">Select</option>
-            <option value="boy">Gents</option>
-            <option value="girl">Ladies</option>
-          </select>
+      <div class="two-col-container">
+        <div class="two-col">
+          <div class="field">
+            <label><strong>Participant Type</strong></label>
+            <select id="swal-type" class="swal2-select">
+              ${typeOptions.map(o => `<option value="${o.value}" ${selected===o.value?'selected':''}>${o.label}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label><strong>Select District</strong></label>
+            <select id="swal-district" class="swal2-select">
+              <option value="">Select district</option>
+              ${districts.map(d => `<option value="${d._id}">${d.districtName}</option>`).join('')}
+            </select>
+          </div>
+          <div id="row-school" class="field" style="display:none;">
+            <label><strong>Select School</strong></label>
+            <select id="swal-school" class="swal2-select">
+              <option value="">Select school</option>
+            </select>
+          </div>
+          <div id="row-role" class="field" style="display:none;">
+            <label><strong>Designation</strong></label>
+            <select id="swal-role" class="swal2-select">
+              ${(ROLE_OPTIONS.teacher).map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
+            </select>
+          </div>
+          <div id="row-name" class="field" style="display:none;">
+            <label><strong>Name</strong></label>
+            <input id="swal-name" class="swal2-input" placeholder="Name" />
+          </div>
+          <div id="row-phone" class="field" style="display:none;">
+            <label><strong>Mobile No</strong></label>
+            <input id="swal-phone" class="swal2-input" placeholder="Mobile" inputmode="numeric" pattern="\\d{10}" maxlength="10" />
+          </div>
+          <div id="row-gender" class="field full" style="display:none;">
+            <label><strong>Gender</strong></label>
+            <select id="swal-gender" class="swal2-select">
+              <option value="">Select</option>
+              <option value="boy">Gents</option>
+              <option value="girl">Ladies</option>
+            </select>
+          </div>
+          <div id="row-other-role" class="field full" style="display:none;">
+            <label><strong>Specify Role</strong></label>
+            <input id="swal-other-role" class="swal2-input" placeholder="Enter role" />
+          </div>
         </div>
       </div>
     `;
@@ -202,11 +200,13 @@ export default function ITAdminTeachers() {
     const { value } = await Swal.fire({
       title: 'Add Participant',
       html: typeHtml('school'),
-      width: '650px',
+      width: '720px',
       focusConfirm: false,
       showCloseButton: true,
       showCancelButton: true,
-      cancelButtonText: 'Close',
+      cancelButtonText: 'Cancel',
+      confirmButtonText: 'Save',
+      confirmButtonColor: '#16a34a',
       didOpen: () => {
         const typeSel = document.getElementById('swal-type');
         const roleSel = document.getElementById('swal-role');
@@ -215,6 +215,10 @@ export default function ITAdminTeachers() {
         const schoolRow = document.getElementById('row-school');
         const schoolSel = document.getElementById('swal-school');
         const phoneInput = document.getElementById('swal-phone');
+        const rowRole = document.getElementById('row-role');
+        const rowName = document.getElementById('row-name');
+        const rowPhone = document.getElementById('row-phone');
+        const rowGender = document.getElementById('row-gender');
 
         const renderRoleOptions = () => {
           const t = typeSel.value === 'district' ? 'district' : 'teacher';
@@ -233,17 +237,33 @@ export default function ITAdminTeachers() {
           }
         };
 
-        typeSel?.addEventListener('change', () => {
+        const refreshVisibility = () => {
+          const hasType = !!typeSel.value;
+          const hasDistrict = !!distSel.value;
           const isSchool = typeSel.value === 'school';
-          schoolRow.style.display = isSchool ? 'block' : 'none';
+          // school selector only when school + district selected
+          schoolRow.style.display = (isSchool && hasDistrict) ? 'block' : 'none';
+          const schoolOk = !isSchool || !!schoolSel.value;
+          const canShowRest = hasType && hasDistrict && schoolOk;
+          rowRole.style.display = canShowRest ? 'block' : 'none';
+          rowName.style.display = canShowRest ? 'block' : 'none';
+          rowPhone.style.display = canShowRest ? 'block' : 'none';
+          rowGender.style.display = canShowRest ? 'block' : 'none';
+          otherRoleRow.style.display = (canShowRest && roleSel.value === 'other') ? 'block' : 'none';
+        };
+
+        typeSel?.addEventListener('change', () => {
           renderRoleOptions();
+          refreshVisibility();
         });
         roleSel?.addEventListener('change', () => {
           otherRoleRow.style.display = roleSel.value === 'other' ? 'block' : 'none';
         });
         distSel?.addEventListener('change', (e) => {
           if (typeSel.value === 'school') loadSchoolsFor(e.target.value);
+          refreshVisibility();
         });
+        schoolSel?.addEventListener('change', refreshVisibility);
         if (phoneInput) {
           const enforceDigits = (e) => {
             const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 10);
@@ -254,6 +274,7 @@ export default function ITAdminTeachers() {
         }
         // initial
         renderRoleOptions();
+        refreshVisibility();
       },
       preConfirm: () => {
         const type = document.getElementById('swal-type').value;
@@ -715,6 +736,25 @@ div.swal2-container .swal2-checkbox {
     }
     .swal2-input {
       margin: 8px 0;
+    }
+    /* Two column grid layout for the add participant form */
+    .two-col-container { padding-top: 4px; }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 20px;
+    }
+    .two-col .field { display: flex; flex-direction: column; }
+    .two-col .field.full { grid-column: 1 / -1; }
+    /* SweetAlert2 actions aligned like Cancel left, Save right */
+    div.swal2-container .swal2-actions {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 8px;
+    }
+    div.swal2-container .swal2-actions .swal2-styled {
+      min-width: 120px;
     }
   `;
 
