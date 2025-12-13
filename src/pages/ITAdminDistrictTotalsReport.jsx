@@ -231,18 +231,51 @@ export default function ITAdminDistrictTotalsReport() {
 
   const toCSV = () => {
     const lines = [];
-    const header = ["Sl.No","District", ...(scope==='school'?['School']:[]), "Boys","Girls", ...(roles||[]).map(k => memberLabels[k] || k), "Grand Total"];
+    const header = [
+      "Sl.No",
+      "District",
+      ...(scope==='school'?['School']:[]),
+      "Boys",
+      "Girls",
+      ...(all?["Total"]:[]),
+      ...(roles||[]).map(k => memberLabels[k] || k),
+      ...(all?["Total"]:[]),
+      "Grand Total"
+    ];
     lines.push(header.join(","));
     const esc = (v) => (/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v));
     (rows || []).forEach((r, i) => {
       const roleVals = (roles||[]).map(k => Number(r.byRole?.[k] || 0));
       const sumRoles = Object.values(r.byRole || {}).reduce((a,b)=> a + Number(b || 0), 0);
-      const row = [String(i+1), r.districtName, ...(scope==='school'?[r.schoolName||'-']:[]), String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
+      const studentsSum = Number(r.boys || 0) + Number(r.girls || 0);
+      const row = [
+        String(i+1),
+        r.districtName,
+        ...(scope==='school'?[r.schoolName||'-']:[]),
+        String(r.boys||0),
+        String(r.girls||0),
+        ...(all?[String(studentsSum)]:[]),
+        ...roleVals.map(String),
+        ...(all?[String(sumRoles)]:[]),
+        String(Number(r.studentsTotal||studentsSum||0) + sumRoles)
+      ];
       lines.push(row.map(esc).join(","));
     });
     if ((rows||[]).length) {
       const roleTotals = (roles||[]).map(k => String(grand.roles?.[k] || 0));
-      const foot = ["Grand Total", ...(scope==='school'?['']:[]), "", String(grand.boys || 0), String(grand.girls || 0), ...roleTotals, String(grand.total || 0)];
+      const studentsGrand = Number(grand.boys || 0) + Number(grand.girls || 0);
+      const rolesGrand = Object.values(grand.roles || {}).reduce((a,b)=> a + Number(b||0), 0);
+      const foot = [
+        "Grand Total",
+        ...(scope==='school'?['']:[]),
+        "",
+        String(grand.boys || 0),
+        String(grand.girls || 0),
+        ...(all?[String(studentsGrand)]:[]),
+        ...roleTotals,
+        ...(all?[String(rolesGrand)]:[]),
+        String(grand.total || 0)
+      ];
       lines.push(foot.map(esc).join(","));
     }
     const blob = new Blob([lines.join("\n")], { type: 'text/csv;charset=utf-8;' });
@@ -255,14 +288,36 @@ export default function ITAdminDistrictTotalsReport() {
     try {
       const { default: jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const doc = new jsPDF({ orientation: all ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
       doc.setFontSize(14);
-      doc.text('District-wise Total Participant Count', 40, 32);
-      const head = [["Sl.No","District", ...(scope==='school'?['School']:[]), "Boys","Girls", ...(roles||[]).map(k => memberLabels[k] || k), "Grand Total"]];
+      const title = all ? 'District-wise Total Participant Count (Nominations)' : 'District-wise Total Participant Count';
+      doc.text(title, 40, 32);
+      const head = [[
+        "Sl.No",
+        "District",
+        ...(scope==='school'?['School']:[]),
+        "Boys",
+        "Girls",
+        ...(all?["Total"]:[]),
+        ...(roles||[]).map(k => memberLabels[k] || k),
+        ...(all?["Total"]:[]),
+        "Grand Total"
+      ]];
       const body = (rows || []).map((r, i) => {
         const roleVals = (roles||[]).map(k => Number(r.byRole?.[k] || 0));
         const sumRoles = Object.values(r.byRole || {}).reduce((a,b) => a + Number(b || 0), 0);
-        return [String(i+1), r.districtName, ...(scope==='school'?[r.schoolName||'-']:[]), String(r.boys||0), String(r.girls||0), ...roleVals.map(String), String(Number(r.studentsTotal||0) + sumRoles)];
+        const studentsSum = Number(r.boys || 0) + Number(r.girls || 0);
+        return [
+          String(i+1),
+          r.districtName,
+          ...(scope==='school'?[r.schoolName||'-']:[]),
+          String(r.boys||0),
+          String(r.girls||0),
+          ...(all?[String(studentsSum)]:[]),
+          ...roleVals.map(String),
+          ...(all?[String(sumRoles)]:[]),
+          String(Number(r.studentsTotal||studentsSum||0) + sumRoles)
+        ];
       });
       const foot = (rows||[]).length ? [[
         "Grand Total",
@@ -270,10 +325,52 @@ export default function ITAdminDistrictTotalsReport() {
         "",
         String(grand.boys || 0),
         String(grand.girls || 0),
+        ...(all?[String(Number(grand.boys||0)+Number(grand.girls||0))]:[]),
         ...((roles||[]).map(k => String(grand.roles?.[k] || 0))),
+        ...(all?[String(Object.values(grand.roles||{}).reduce((a,b)=>a+Number(b||0),0))]:[]),
         String(grand.total || 0)
       ]] : [];
-      autoTable(doc, { head: head, body: [...body, ...foot], startY: 48, headStyles: { fillColor: [99,102,241] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
+      // Build columnStyles to color sections when Nominations (all=true)
+      let columnStyles = {};
+      if (all) {
+        // compute indexes
+        let idx = 0;
+        const idxSl = idx++; // Sl.No
+        const idxDist = idx++;
+        const hasSchool = (scope === 'school');
+        const idxSchool = hasSchool ? idx++ : -1;
+        const idxBoys = idx++;
+        const idxGirls = idx++;
+        const idxStudentsTotal = idx++;
+        const rolesStart = idx;
+        const rolesEnd = rolesStart + (roles ? roles.length : 0) - 1;
+        idx = rolesEnd + 1;
+        const idxRolesTotal = idx++;
+        const idxGrand = idx;
+        // Colors similar to sample
+        const blue = [208, 224, 255];
+        const green = [210, 238, 214];
+        const peach = [255, 222, 214];
+        // Student columns
+        columnStyles[idxBoys] = { fillColor: blue };
+        columnStyles[idxGirls] = { fillColor: blue };
+        columnStyles[idxStudentsTotal] = { fillColor: blue };
+        // Role columns
+        for (let c = rolesStart; c <= rolesEnd; c++) columnStyles[c] = { fillColor: green };
+        // Roles total column
+        columnStyles[idxRolesTotal] = { fillColor: peach };
+      }
+
+      autoTable(doc, {
+        head: head,
+        body: [...body, ...foot],
+        startY: 48,
+        headStyles: { fillColor: [71, 85, 105], halign: 'center' },
+        styles: { fontSize: 9 },
+        theme: 'grid',
+        margin: { left: 40, right: 40 },
+        columnStyles
+      });
       doc.save('district_wise_totals.pdf');
     } catch(e) {
       alert('Please install jspdf and jspdf-autotable to export PDF');
@@ -302,9 +399,11 @@ export default function ITAdminDistrictTotalsReport() {
                   {scope === 'school' && (<th>School</th>)}
                   <th>Boys</th>
                   <th>Girls</th>
+                  {all && (<th>Total</th>)}
                   {(roles || []).map((k) => (
                     <th key={k}>{memberLabels[k] || k}</th>
                   ))}
+                  {all && (<th>Total</th>)}
                   <th>Grand Total</th>
                 </tr>
               </thead>
@@ -312,6 +411,7 @@ export default function ITAdminDistrictTotalsReport() {
                 {(rows || []).length ? (rows || []).map((r, i) => {
                   const roleVals = (roles||[]).map(k => Number(r.byRole?.[k] || 0));
                   const sumRoles = Object.values(r.byRole || {}).reduce((a,b) => a + Number(b || 0), 0);
+                  const studentsSum = Number(r.boys||0) + Number(r.girls||0);
                   return (
                     <tr key={r.key || r.districtName}>
                       <td>{i + 1}</td>
@@ -319,12 +419,14 @@ export default function ITAdminDistrictTotalsReport() {
                       {scope === 'school' && (<td>{r.schoolName || '-'}</td>)}
                       <td>{r.boys || 0}</td>
                       <td>{r.girls || 0}</td>
+                      {all && (<td>{studentsSum}</td>)}
                       {roleVals.map((v, idx) => (<td key={String(idx)}>{v}</td>))}
+                      {all && (<td>{sumRoles}</td>)}
                       <td>{Number(r.studentsTotal || 0) + sumRoles}</td>
                     </tr>
                   );
                 }) : (
-                  <tr><td colSpan={(scope==='school'?6:5) + (roles ? roles.length : 0)} style={{ textAlign: 'center' }}>No data</td></tr>
+                  <tr><td colSpan={(scope==='school'?6:5) + (roles ? roles.length : 0) + (all?2:0)} style={{ textAlign: 'center' }}>No data</td></tr>
                 )}
                 {(rows || []).length ? (
                   <tr>
@@ -333,7 +435,9 @@ export default function ITAdminDistrictTotalsReport() {
                     {scope === 'school' && (<td></td>)}
                     <td><b>{grand.boys}</b></td>
                     <td><b>{grand.girls}</b></td>
+                    {all && (<td><b>{Number(grand.boys||0)+Number(grand.girls||0)}</b></td>)}
                     {(roles || []).map((k) => (<td key={k}><b>{grand.roles?.[k] || 0}</b></td>))}
+                    {all && (<td><b>{Object.values(grand.roles||{}).reduce((a,b)=>a+Number(b||0),0)}</b></td>)}
                     <td><b>{grand.total}</b></td>
                   </tr>
                 ) : null}
