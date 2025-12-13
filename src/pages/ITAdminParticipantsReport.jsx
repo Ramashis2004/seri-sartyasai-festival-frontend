@@ -174,14 +174,37 @@ export default function ITAdminParticipantsReport() {
       const { default: jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-      
+      const loadImageDataUrl = async (src) => {
+        try {
+          const resp = await fetch(src);
+          const blob = await resp.blob();
+          return await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        } catch { return null; }
+      };
+      const [leftLogoData, rightLogoData] = await Promise.all([
+        loadImageDataUrl('/images/SSSSO.png'),
+        loadImageDataUrl('/images/SSSBV-1-removebg-preview.png'),
+      ]);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const marginX = 40;
+      const sideW = 60, sideH = 60;
+      const yTop = 16;
+      if (leftLogoData) { try { doc.addImage(leftLogoData, 'PNG', marginX, yTop, sideW, sideH); } catch {} }
+      if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
+      const midX = pageWidth / 2;
+      doc.setFontSize(12);
+      doc.text('Aum Sri Sai Ram', midX, yTop + sideH + 14, { align: 'center' });
       doc.setFontSize(14);
-      doc.text("Reporting Status", 40, 32);
+      doc.text('Reporting Status', midX, yTop + sideH + 34, { align: 'center' });
       
       autoTable(doc, {
         head: [["Sl. No", "District", "School", "Students Reported From Schools"]],
         body: statusRows.map((r, i) => [i + 1, r.districtName, r.schoolName, r.reported ? "Reported" : "Not Reported"]),
-        startY: 48,
+        startY: yTop + sideH + 44,
         styles: { fontSize: 10 },
         headStyles: { fillColor: [71, 85, 105] },
         columnStyles: { 0: { cellWidth: 'auto' } } // Auto width for sl.no
@@ -253,12 +276,36 @@ export default function ITAdminParticipantsReport() {
       const headers = bySchool ? ["District", "School", "BOY", "GIRL", "Grand Total"] : ["District", "BOY", "GIRL", "Grand Total"];
       const body = rows.map(r => bySchool ? [r.districtName, r.schoolName, r.boy, r.girl, r.total] : [r.districtName, r.boy, r.girl, r.total]);
       const foot = bySchool ? ["Grand Total", "", grand.boy, grand.girl, grand.total] : ["Grand Total", grand.boy, grand.girl, grand.total];
+      const loadImageDataUrl = async (src) => {
+        try {
+          const resp = await fetch(src);
+          const blob = await resp.blob();
+          return await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        } catch { return null; }
+      };
+      const [leftLogoData, rightLogoData] = await Promise.all([
+        loadImageDataUrl('/images/SSSSO.png'),
+        loadImageDataUrl('/images/SSSBV-1-removebg-preview.png'),
+      ]);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const marginX = 40;
+      const sideW = 60, sideH = 60;
+      const yTop = 16;
+      if (leftLogoData) { try { doc.addImage(leftLogoData, 'PNG', marginX, yTop, sideW, sideH); } catch {} }
+      if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
+      const midX = pageWidth / 2;
+      doc.setFontSize(12);
+      doc.text('Aum Sri Sai Ram', midX, yTop + sideH + 14, { align: 'center' });
       doc.setFontSize(14);
-      doc.text(scope === 'school' ? "Participants by School" : "Participants by District", 40, 32);
+      doc.text(bySchool ? 'Participants Both School & District' : 'Participants by District', midX, yTop + sideH + 34, { align: 'center' });
       autoTable(doc, {
         head: [headers],
         body: [...body, foot],
-        startY: 48,
+        startY: yTop + sideH + 44,
         styles: { fontSize: 10 },
         headStyles: { fillColor: [71, 85, 105] },
       });

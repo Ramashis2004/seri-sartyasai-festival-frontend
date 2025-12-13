@@ -292,7 +292,7 @@ export default function ITAdminDistrictTotalsReport() {
       doc.setFontSize(14);
       const title = all ? 'District-wise Total Participant Count (Nominations)' : 'District-wise Total Participant Count';
 
-      // Try to place left and right logos at top
+      // Place two corner logos (left & right) and a centered logo + mantra/title
       const loadImageDataUrl = async (src) => {
         try {
           const resp = await fetch(src);
@@ -304,20 +304,26 @@ export default function ITAdminDistrictTotalsReport() {
           });
         } catch { return null; }
       };
-      const [lres, rres] = await Promise.allSettled([
-        loadImageDataUrl('/images/SSSSO.png'),
+      const [leftLogoData, rightLogoData, centerLogoData] = await Promise.all([
+      
         loadImageDataUrl('/images/SSSBV-1-removebg-preview.png'),
+        loadImageDataUrl('/images/SSSSO.png'),
       ]);
       const pageWidth = doc.internal.pageSize.getWidth();
       const marginX = 40;
-      const logoW = 60; const logoH = 60;
+      const sideW = 60, sideH = 60; // corner logos
+      const centerW = 70, centerH = 70; // centered logo
       const yTop = 16;
-      const leftLogo = lres.status === 'fulfilled' ? lres.value : null;
-      const rightLogo = rres.status === 'fulfilled' ? rres.value : null;
-      if (leftLogo) { try { doc.addImage(leftLogo, 'PNG', marginX, yTop, logoW, logoH); } catch {} }
-      if (rightLogo) { try { doc.addImage(rightLogo, 'PNG', pageWidth - marginX - logoW, yTop, logoW, logoH); } catch {} }
-      // Title below logos
-      doc.text(title, marginX, yTop + logoH + 12);
+      // draw corner logos
+      if (leftLogoData) { try { doc.addImage(leftLogoData, 'PNG', marginX, yTop, sideW, sideH); } catch {} }
+      if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
+      // draw centered logo
+      if (centerLogoData) { try { const xC = (pageWidth - centerW) / 2; doc.addImage(centerLogoData, 'PNG', xC, yTop, centerW, centerH); } catch {} }
+      const midX = pageWidth / 2;
+      doc.setFontSize(12);
+      doc.text('Aum Sri Sai Ram', midX, yTop + centerH + 14, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text(title, midX, yTop + centerH + 34, { align: 'center' });
       const head = [[
         "Sl.No",
         "District",
@@ -357,40 +363,55 @@ export default function ITAdminDistrictTotalsReport() {
         String(grand.total || 0)
       ]] : [];
       // Build columnStyles to color sections when Nominations (all=true)
+      // Also center-align all numeric columns (including Sl.No),
+      // while leaving text columns (District/School) default left-aligned.
       let columnStyles = {};
+
+      // compute indexes for both cases (all=true/false)
+      let idx = 0;
+      const idxSl = idx++; // Sl.No
+      const idxDist = idx++;
+      const hasSchool = (scope === 'school');
+      const idxSchool = hasSchool ? idx++ : -1;
+      const idxBoys = idx++;
+      const idxGirls = idx++;
+      let idxStudentsTotal = -1;
+      if (all) idxStudentsTotal = idx++;
+      const rolesStart = idx;
+      const rolesEnd = rolesStart + (roles ? roles.length : 0) - 1;
+      idx = rolesEnd + 1;
+      let idxRolesTotal = -1;
+      if (all) idxRolesTotal = idx++;
+      const idxGrand = idx;
+
+      // Center-align numeric columns always
+      columnStyles[idxSl] = { ...(columnStyles[idxSl]||{}), halign: 'center' };
+      columnStyles[idxBoys] = { ...(columnStyles[idxBoys]||{}), halign: 'center' };
+      columnStyles[idxGirls] = { ...(columnStyles[idxGirls]||{}), halign: 'center' };
+      if (idxStudentsTotal !== -1) columnStyles[idxStudentsTotal] = { ...(columnStyles[idxStudentsTotal]||{}), halign: 'center' };
+      for (let c = rolesStart; c <= rolesEnd; c++) if (c >= rolesStart) columnStyles[c] = { ...(columnStyles[c]||{}), halign: 'center' };
+      if (idxRolesTotal !== -1) columnStyles[idxRolesTotal] = { ...(columnStyles[idxRolesTotal]||{}), halign: 'center' };
+      columnStyles[idxGrand] = { ...(columnStyles[idxGrand]||{}), halign: 'center' };
+
       if (all) {
-        // compute indexes
-        let idx = 0;
-        const idxSl = idx++; // Sl.No
-        const idxDist = idx++;
-        const hasSchool = (scope === 'school');
-        const idxSchool = hasSchool ? idx++ : -1;
-        const idxBoys = idx++;
-        const idxGirls = idx++;
-        const idxStudentsTotal = idx++;
-        const rolesStart = idx;
-        const rolesEnd = rolesStart + (roles ? roles.length : 0) - 1;
-        idx = rolesEnd + 1;
-        const idxRolesTotal = idx++;
-        const idxGrand = idx;
         // Colors similar to sample
         const blue = [208, 224, 255];
         const green = [210, 238, 214];
         const peach = [255, 222, 214];
-        // Student columns
-        columnStyles[idxBoys] = { fillColor: blue };
-        columnStyles[idxGirls] = { fillColor: blue };
-        columnStyles[idxStudentsTotal] = { fillColor: blue };
-        // Role columns
-        for (let c = rolesStart; c <= rolesEnd; c++) columnStyles[c] = { fillColor: green };
-        // Roles total column
-        columnStyles[idxRolesTotal] = { fillColor: peach };
+        // Student columns color
+        columnStyles[idxBoys] = { ...(columnStyles[idxBoys]||{}), fillColor: blue };
+        columnStyles[idxGirls] = { ...(columnStyles[idxGirls]||{}), fillColor: blue };
+        if (idxStudentsTotal !== -1) columnStyles[idxStudentsTotal] = { ...(columnStyles[idxStudentsTotal]||{}), fillColor: blue };
+        // Role columns color
+        for (let c = rolesStart; c <= rolesEnd; c++) columnStyles[c] = { ...(columnStyles[c]||{}), fillColor: green };
+        // Roles total column color
+        if (idxRolesTotal !== -1) columnStyles[idxRolesTotal] = { ...(columnStyles[idxRolesTotal]||{}), fillColor: peach };
       }
 
       autoTable(doc, {
         head: head,
         body: [...body, ...foot],
-        startY: yTop + logoH + 20,
+        startY: yTop + centerH + 44,
         headStyles: { fillColor: [71, 85, 105], halign: 'center' },
         styles: { fontSize: 9 },
         theme: 'grid',
