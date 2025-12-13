@@ -97,10 +97,90 @@ export default function ITAdminOverview() {
         itGetNotReported(params),
         itGetStudentsYetToReport(params),
         itGetTeachersOverview(params),
-        itListParticipants({ scope: 'school', districtId, eventId }).catch(() => []),
-        itListParticipants({ scope: 'district', districtId, eventId }).catch(() => []),
+        itListParticipants({ scope: 'school', districtId, eventId, frozen: 'true' }).catch(() => []),
+        itListParticipants({ scope: 'district', districtId, eventId, frozen: 'true' }).catch(() => []),
       ]);
-      setMetrics(m || null);
+      // De-duplicate students across events for cards (overall/school/district)
+      const norm = (s) => String(s || '').trim().toLowerCase();
+      const aggUnique = (list) => {
+        const seen = new Set();
+        let boys = 0, girls = 0, total = 0;
+        (Array.isArray(list) ? list : []).forEach((p) => {
+          const dId = String(p.districtId || '');
+          const sName = p.schoolName || '-';
+          const name = norm(p.studentName || p.name);
+          if (!dId || !name) return;
+          const uKey = `${dId}__${sName}__${name}`;
+          if (seen.has(uKey)) return;
+          seen.add(uKey);
+          const g = norm(p.gender);
+          if (g === 'boy') boys += 1; else if (g === 'girl') girls += 1;
+          total += 1;
+        });
+        return { total, boys, girls, seen };
+      };
+      const schoolAgg = aggUnique(schoolParts);
+      // District counts should exclude students already reported from schools
+      const aggUniqueExcluding = (list, excludeSeen) => {
+        const seen = new Set();
+        let boys = 0, girls = 0, total = 0;
+        (Array.isArray(list) ? list : []).forEach((p) => {
+          const dId = String(p.districtId || '');
+          const sName = p.schoolName || '-';
+          const name = norm(p.studentName || p.name);
+          if (!dId || !name) return;
+          const uKey = `${dId}__${sName}__${name}`;
+          if (excludeSeen && excludeSeen.has(uKey)) return; // skip if already counted in schools
+          if (seen.has(uKey)) return;
+          seen.add(uKey);
+          const g = norm(p.gender);
+          if (g === 'boy') boys += 1; else if (g === 'girl') girls += 1;
+          total += 1;
+        });
+        return { total, boys, girls, seen };
+      };
+      const districtAgg = aggUniqueExcluding(districtParts, schoolAgg.seen);
+      // Overall union across both sources (avoid double counting if same student appears in both sources)
+      const unionSeen = new Set([...(schoolAgg.seen || []), ...(districtAgg.seen || [])]);
+      let allBoys = 0, allGirls = 0;
+      unionSeen.forEach((key) => {
+        // derive a representative item to pick gender from any source: rebuild from lists quickly
+        // As we cannot map back reliably, recompute from combined lists with a seen set
+      });
+      const allAgg = (() => {
+        const seen = new Set();
+        let boys = 0, girls = 0, total = 0;
+        const combined = [...(Array.isArray(schoolParts)?schoolParts:[]), ...(Array.isArray(districtParts)?districtParts:[])];
+        combined.forEach((p) => {
+          const dId = String(p.districtId || '');
+          const sName = p.schoolName || '-';
+          const name = norm(p.studentName || p.name);
+          if (!dId || !name) return;
+          const uKey = `${dId}__${sName}__${name}`;
+          if (seen.has(uKey)) return;
+          seen.add(uKey);
+          const g = norm(p.gender);
+          if (g === 'boy') boys += 1; else if (g === 'girl') girls += 1;
+          total += 1;
+        });
+        return { total, boys, girls };
+      })();
+
+      setMetrics({
+        ...(m || {}),
+        participants: {
+          ...(m?.participants || {}),
+          total: allAgg.total || 0,
+          boys: allAgg.boys || 0,
+          girls: allAgg.girls || 0,
+          schoolCount: schoolAgg.total || 0,
+          schoolBoys: schoolAgg.boys || 0,
+          schoolGirls: schoolAgg.girls || 0,
+          districtCount: districtAgg.total || 0,
+          districtBoys: districtAgg.boys || 0,
+          districtGirls: districtAgg.girls || 0,
+        }
+      });
       setNotReported(nr || { districts: [], schools: [] });
       setStudentsYet(sy || { schoolWise: [], districtWise: [] });
       setTeachers(to || { reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } });

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import { itGetParticipantsByDistrictReport, itGetNotReported } from "../api/itAdminApi";
+import { itGetParticipantsByDistrictReport, itGetNotReported, itListParticipants } from "../api/itAdminApi";
 import districtApi from "../api/districtApi";
 import { toast } from "react-toastify";
 
@@ -82,10 +82,70 @@ export default function ITAdminParticipantsReport() {
         setRows([]);
         setGrand({ boy: 0, girl: 0, total: 0 });
       } else {
-        // Default: numeric participants-by-district report
-        const data = await itGetParticipantsByDistrictReport({ districtId, eventId, scope, frozen });
-        setRows(data?.rows || []);
-        setGrand(data?.grandTotal || { boy: 0, girl: 0, total: 0 });
+        // Default: numeric participants report with de-duplication across events
+        // When scope === 'school' -> show district+school rows; otherwise show district-only rows
+        // We aggregate from raw participant lists to ensure a student participating in multiple events is counted once
+        const [schoolParts, districtParts] = await Promise.all([
+          itListParticipants({ scope: 'school', districtId, eventId, frozen }).catch(() => []),
+          itListParticipants({ scope: 'district', districtId, eventId, frozen }).catch(() => []),
+        ]);
+
+        const norm = (s) => String(s || "").trim().toLowerCase();
+
+        if (scope === 'school') {
+          // Aggregation by district + school
+          const map = new Map();
+          const seen = new Set();
+          const add = (p) => {
+            const dId = String(p.districtId || '');
+            const dName = p.districtName || '-';
+            const sName = p.schoolName || '-';
+            const name = norm(p.studentName || p.name);
+            if (!dId || !sName || !name) return;
+            // Unique per district+school+name (ignore class/event)
+            const uKey = `${dId}__${sName}__${name}`;
+            if (seen.has(uKey)) return;
+            seen.add(uKey);
+            const key = `${dId}__${sName}`;
+            const cur = map.get(key) || { key, districtId: dId, districtName: dName, schoolName: sName, boy: 0, girl: 0, total: 0 };
+            const gender = norm(p.gender);
+            if (gender === 'boy') cur.boy += 1; else if (gender === 'girl') cur.girl += 1; // others are only in total
+            cur.total += 1; // overall unique student count
+            map.set(key, cur);
+          };
+          (Array.isArray(schoolParts) ? schoolParts : []).forEach(add); // only school source
+          const arr = Array.from(map.values()).sort((a,b)=> (a.districtName.localeCompare(b.districtName)) || (a.schoolName || '').localeCompare(b.schoolName || ''));
+          const g = arr.reduce((acc, r) => ({ boy: acc.boy + Number(r.boy||0), girl: acc.girl + Number(r.girl||0), total: acc.total + Number(r.total||0) }), { boy: 0, girl: 0, total: 0 });
+          setRows(arr);
+          setGrand(g);
+        } else {
+          // Aggregation by district only
+          const map = new Map();
+          const seen = new Set();
+          const add = (p) => {
+            const dId = String(p.districtId || '');
+            const dName = p.districtName || '-';
+            const sName = p.schoolName || '-';
+            const name = norm(p.studentName || p.name);
+            if (!dId || !name) return;
+            // Unique per district(+school when available) + name (ignore class/event)
+            const uKey = `${dId}__${sName}__${name}`;
+            if (seen.has(uKey)) return;
+            seen.add(uKey);
+            const key = dId;
+            const cur = map.get(key) || { districtId: dId, districtName: dName, boy: 0, girl: 0, total: 0 };
+            const gender = norm(p.gender);
+            if (gender === 'boy') cur.boy += 1; else if (gender === 'girl') cur.girl += 1;
+            cur.total += 1;
+            map.set(key, cur);
+          };
+          const sourceList = scope === 'district' ? districtParts : [...(Array.isArray(schoolParts)?schoolParts:[]), ...(Array.isArray(districtParts)?districtParts:[])];
+          (Array.isArray(sourceList) ? sourceList : []).forEach(add);
+          const arr = Array.from(map.values()).sort((a,b)=> a.districtName.localeCompare(b.districtName));
+          const g = arr.reduce((acc, r) => ({ boy: acc.boy + Number(r.boy||0), girl: acc.girl + Number(r.girl||0), total: acc.total + Number(r.total||0) }), { boy: 0, girl: 0, total: 0 });
+          setRows(arr);
+          setGrand(g);
+        }
       }
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load report");
@@ -166,15 +226,16 @@ export default function ITAdminParticipantsReport() {
       exportStatusCSV();
       return;
     }
-    const header = ["District", "BOY", "GIRL", "Grand Total"];
-    const body = rows.map(r => [r.districtName, r.boy, r.girl, r.total]);
+    const bySchool = scope === 'school';
+    const header = bySchool ? ["District", "School", "BOY", "GIRL", "Grand Total"] : ["District", "BOY", "GIRL", "Grand Total"];
+    const body = rows.map(r => bySchool ? [r.districtName, r.schoolName, r.boy, r.girl, r.total] : [r.districtName, r.boy, r.girl, r.total]);
     const foot = ["Grand Total", grand.boy, grand.girl, grand.total];
     const lines = [header, ...body, foot].map(arr => arr.join(","));
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `participants_by_district_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `participants_${scope==='school'?'by_school':'by_district'}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -188,11 +249,12 @@ export default function ITAdminParticipantsReport() {
       const { default: jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-      const headers = ["District", "BOY", "GIRL", "Grand Total"];
-      const body = rows.map(r => [r.districtName, r.boy, r.girl, r.total]);
-      const foot = ["Grand Total", grand.boy, grand.girl, grand.total];
+      const bySchool = scope === 'school';
+      const headers = bySchool ? ["District", "School", "BOY", "GIRL", "Grand Total"] : ["District", "BOY", "GIRL", "Grand Total"];
+      const body = rows.map(r => bySchool ? [r.districtName, r.schoolName, r.boy, r.girl, r.total] : [r.districtName, r.boy, r.girl, r.total]);
+      const foot = bySchool ? ["Grand Total", "", grand.boy, grand.girl, grand.total] : ["Grand Total", grand.boy, grand.girl, grand.total];
       doc.setFontSize(14);
-      doc.text("Participants by District", 40, 32);
+      doc.text(scope === 'school' ? "Participants by School" : "Participants by District", 40, 32);
       autoTable(doc, {
         head: [headers],
         body: [...body, foot],
@@ -200,7 +262,7 @@ export default function ITAdminParticipantsReport() {
         styles: { fontSize: 10 },
         headStyles: { fillColor: [71, 85, 105] },
       });
-      doc.save(`participants_by_district_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`participants_${scope==='school'?'by_school':'by_district'}_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (e) {
       toast.error("Please install jspdf and jspdf-autotable to export PDF");
     }
@@ -215,32 +277,47 @@ export default function ITAdminParticipantsReport() {
       const docx = await import("docx");
       const { saveAs } = await import("file-saver");
       const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, TextRun, AlignmentType } = docx;
-
-      const headerCells = ["District", "BOY", "GIRL", "Grand Total"].map(t => new TableCell({
-        width: { size: 25, type: WidthType.PERCENTAGE },
+      const bySchool = scope === 'school';
+      const cols = bySchool ? ["District", "School", "BOY", "GIRL", "Grand Total"] : ["District", "BOY", "GIRL", "Grand Total"];
+      const widthPct = bySchool ? [20, 30, 16, 16, 18] : [34, 22, 22, 22];
+      const headerCells = cols.map((t, idx) => new TableCell({
+        width: { size: widthPct[idx] || 20, type: WidthType.PERCENTAGE },
         children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })], alignment: AlignmentType.CENTER })],
       }));
       const headerRow = new TableRow({ children: headerCells });
+      const bodyRows = rows.map(r => new TableRow({ children: (
+        bySchool ? [
+          new TableCell({ children: [new Paragraph(String(r.districtName || ""))] }),
+          new TableCell({ children: [new Paragraph(String(r.schoolName || ""))] }),
+          new TableCell({ children: [new Paragraph(String(r.boy))] }),
+          new TableCell({ children: [new Paragraph(String(r.girl))] }),
+          new TableCell({ children: [new Paragraph(String(r.total))] }),
+        ] : [
+          new TableCell({ children: [new Paragraph(String(r.districtName || ""))] }),
+          new TableCell({ children: [new Paragraph(String(r.boy))] }),
+          new TableCell({ children: [new Paragraph(String(r.girl))] }),
+          new TableCell({ children: [new Paragraph(String(r.total))] }),
+        ]) }));
 
-      const bodyRows = rows.map(r => new TableRow({ children: [
-        new TableCell({ children: [new Paragraph(String(r.districtName || ""))] }),
-        new TableCell({ children: [new Paragraph(String(r.boy))] }),
-        new TableCell({ children: [new Paragraph(String(r.girl))] }),
-        new TableCell({ children: [new Paragraph(String(r.total))] }),
-      ] }));
-
-      const footRow = new TableRow({ children: [
-        new TableCell({ children: [new Paragraph(new TextRun({ text: "Grand Total", bold: true }))] }),
-        new TableCell({ children: [new Paragraph(String(grand.boy))] }),
-        new TableCell({ children: [new Paragraph(String(grand.girl))] }),
-        new TableCell({ children: [new Paragraph(String(grand.total))] }),
-      ]});
+      const footRow = new TableRow({ children: (
+        bySchool ? [
+          new TableCell({ children: [new Paragraph(new TextRun({ text: "Grand Total", bold: true }))] }),
+          new TableCell({ children: [new Paragraph("")] }),
+          new TableCell({ children: [new Paragraph(String(grand.boy))] }),
+          new TableCell({ children: [new Paragraph(String(grand.girl))] }),
+          new TableCell({ children: [new Paragraph(String(grand.total))] }),
+        ] : [
+          new TableCell({ children: [new Paragraph(new TextRun({ text: "Grand Total", bold: true }))] }),
+          new TableCell({ children: [new Paragraph(String(grand.boy))] }),
+          new TableCell({ children: [new Paragraph(String(grand.girl))] }),
+          new TableCell({ children: [new Paragraph(String(grand.total))] }),
+        ])});
 
       const table = new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...bodyRows, footRow] });
 
-      const doc = new Document({ sections: [{ properties: {}, children: [new Paragraph({ text: "Participants by District", heading: "Heading1" }), table] }] });
+      const doc = new Document({ sections: [{ properties: {}, children: [new Paragraph({ text: scope === 'school' ? "Participants by School" : "Participants by District", heading: "Heading1" }), table] }] });
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, `participants_by_district_${new Date().toISOString().split('T')[0]}.docx`);
+      saveAs(blob, `participants_${scope==='school'?'by_school':'by_district'}_${new Date().toISOString().split('T')[0]}.docx`);
     } catch (e) {
       toast.error("Please install docx and file-saver to export DOCX");
     }
@@ -296,6 +373,7 @@ export default function ITAdminParticipantsReport() {
                 <thead>
                   <tr>
                     <th>District</th>
+                    {scope === 'school' && (<th>School</th>)}
                     <th>BOY</th>
                     <th>GIRL</th>
                     <th>Grand Total</th>
@@ -303,8 +381,9 @@ export default function ITAdminParticipantsReport() {
                 </thead>
                 <tbody>
                   {rows.map((r) => (
-                    <tr key={r.districtId}>
+                    <tr key={r.key || r.districtId}>
                       <td>{r.districtName}</td>
+                      {scope === 'school' && (<td>{r.schoolName}</td>)}
                       <td>{r.boy}</td>
                       <td>{r.girl}</td>
                       <td>{r.total}</td>
@@ -312,6 +391,7 @@ export default function ITAdminParticipantsReport() {
                   ))}
                   <tr>
                     <td><b>Grand Total</b></td>
+                    {scope === 'school' && (<td></td>)}
                     <td><b>{grand.boy}</b></td>
                     <td><b>{grand.girl}</b></td>
                     <td><b>{grand.total}</b></td>
