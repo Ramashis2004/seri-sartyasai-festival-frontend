@@ -291,7 +291,33 @@ export default function ITAdminDistrictTotalsReport() {
       const doc = new jsPDF({ orientation: all ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
       doc.setFontSize(14);
       const title = all ? 'District-wise Total Participant Count (Nominations)' : 'District-wise Total Participant Count';
-      doc.text(title, 40, 32);
+
+      // Try to place left and right logos at top
+      const loadImageDataUrl = async (src) => {
+        try {
+          const resp = await fetch(src);
+          const blob = await resp.blob();
+          return await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        } catch { return null; }
+      };
+      const [lres, rres] = await Promise.allSettled([
+        loadImageDataUrl('/images/SSSSO.png'),
+        loadImageDataUrl('/images/SSSBV-1-removebg-preview.png'),
+      ]);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const marginX = 40;
+      const logoW = 60; const logoH = 60;
+      const yTop = 16;
+      const leftLogo = lres.status === 'fulfilled' ? lres.value : null;
+      const rightLogo = rres.status === 'fulfilled' ? rres.value : null;
+      if (leftLogo) { try { doc.addImage(leftLogo, 'PNG', marginX, yTop, logoW, logoH); } catch {} }
+      if (rightLogo) { try { doc.addImage(rightLogo, 'PNG', pageWidth - marginX - logoW, yTop, logoW, logoH); } catch {} }
+      // Title below logos
+      doc.text(title, marginX, yTop + logoH + 12);
       const head = [[
         "Sl.No",
         "District",
@@ -364,11 +390,11 @@ export default function ITAdminDistrictTotalsReport() {
       autoTable(doc, {
         head: head,
         body: [...body, ...foot],
-        startY: 48,
+        startY: yTop + logoH + 20,
         headStyles: { fillColor: [71, 85, 105], halign: 'center' },
         styles: { fontSize: 9 },
         theme: 'grid',
-        margin: { left: 40, right: 40 },
+        margin: { left: marginX, right: marginX },
         columnStyles
       });
       doc.save('district_wise_totals.pdf');
