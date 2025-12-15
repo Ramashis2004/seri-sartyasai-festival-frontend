@@ -46,6 +46,7 @@ export default function ITAdminTeachers() {
   const [eventId, setEventId] = useState("");
   const [present, setPresent] = useState("");
   const [frozen, setFrozen] = useState("");
+  const [gender, setGender] = useState("");
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
 
@@ -70,6 +71,7 @@ export default function ITAdminTeachers() {
     setIf(maybe('eventId'), setEventId);
     setIf(maybe('present'), setPresent);
     setIf(maybe('frozen'), setFrozen);
+    setIf(maybe('gender'), setGender);
     setIf(maybe('role'), setRole);
     setIf(maybe('q'), setQ);
   }, []);
@@ -135,6 +137,7 @@ export default function ITAdminTeachers() {
     setEventId("");
     setPresent("");
     setFrozen("");
+    setGender("");
     setQ("");
     setRole("");
   };
@@ -573,8 +576,17 @@ export default function ITAdminTeachers() {
         return false;
       });
     }
+    if (gender) {
+      const g = String(gender).toLowerCase();
+      arr = arr.filter(r => {
+        const val = String(r.gender || r.sex || r.g || r.genderType || '').toLowerCase();
+        if (g === 'boy') return val === 'boy' || val === 'male' || val === 'm' || val === 'gent' || val === 'gents';
+        if (g === 'girl') return val === 'girl' || val === 'female' || val === 'f' || val === 'lady' || val === 'ladies';
+        return true;
+      });
+    }
     return arr;
-  }, [items, role, eventId]);
+  }, [items, role, eventId, gender]);
 
   const onToggleFreezeRow = async (row) => {
     try {
@@ -768,7 +780,7 @@ div.swal2-container .swal2-checkbox {
       onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}
     >
       <div style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)", gap: 8 }}>
           <select value={scope} onChange={(e) => setScope(e.target.value)}>
             <option value="all">School / Distict</option>
             <option value="school">School</option>
@@ -797,6 +809,11 @@ div.swal2-container .swal2-checkbox {
             <option value="">Status</option>
             <option value="true">Frozen</option>
             <option value="false">Not Frozen</option>
+          </select>
+          <select value={gender} onChange={(e) => setGender(e.target.value)}>
+            <option value="">Gender</option>
+            <option value="boy">Gents</option>
+            <option value="girl">Ladies</option>
           </select>
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="">All Roles</option>
