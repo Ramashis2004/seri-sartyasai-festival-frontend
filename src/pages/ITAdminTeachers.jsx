@@ -943,7 +943,7 @@ div.swal2-container .swal2-checkbox {
               zIndex: 1100,
             }}
             aria-label="Scroll to top"
-            title="Scroll to top"
+            title="Scroll to topp"
           >
             ↑
           </button>
