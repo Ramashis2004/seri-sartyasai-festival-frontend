@@ -2,7 +2,7 @@ import React from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useEffect, useState, useMemo } from "react";
 import districtApi from "../api/districtApi";
-import { itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview, itListParticipants, itGetParticipantsByDistrictReport, itGetTeachersByDistrictReport, itGetTeachersBySchoolReport } from "../api/itAdminApi";
+import { itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview, itListParticipants, itGetParticipantsByDistrictReport, itGetTeachersByDistrictReport, itGetTeachersBySchoolReport, itListTeachers } from "../api/itAdminApi";
 import "../styles/itAdminOverview.css";
 
 export default function ITAdminOverview() {
@@ -92,13 +92,21 @@ export default function ITAdminOverview() {
     try {
       setLoading(true);
       setError("");
-      const [m, nr, sy, to, schoolParts, districtParts] = await Promise.all([
+      // Build safe params for teacher list calls (omit empty districtId)
+      const tParamsSchool = { scope: 'school', frozen: 'true' };
+      if (districtId) tParamsSchool.districtId = districtId;
+      const tParamsDistrict = { scope: 'district', frozen: 'true' };
+      if (districtId) tParamsDistrict.districtId = districtId;
+
+      const [m, nr, sy, to, schoolParts, districtParts, schoolTeachersList, districtTeachersList] = await Promise.all([
         itGetOverviewMetrics(params),
         itGetNotReported(params),
         itGetStudentsYetToReport(params),
         itGetTeachersOverview(params),
         itListParticipants({ scope: 'school', districtId, eventId, frozen: 'true' }).catch(() => []),
         itListParticipants({ scope: 'district', districtId, eventId, frozen: 'true' }).catch(() => []),
+        itListTeachers(tParamsSchool).catch(() => []),
+        itListTeachers(tParamsDistrict).catch(() => []),
       ]);
       // De-duplicate students across events for cards (overall/school/district)
       const norm = (s) => String(s || '').trim().toLowerCase();
@@ -183,7 +191,46 @@ export default function ITAdminOverview() {
       });
       setNotReported(nr || { districts: [], schools: [] });
       setStudentsYet(sy || { schoolWise: [], districtWise: [] });
-      setTeachers(to || { reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } });
+      // Compute gender-wise counts for School Teachers (role 'teacher') and District Gurus (role 'guru')
+      const normTxt = (s) => String(s || '').trim().toLowerCase();
+      const isMale = (g) => {
+        const v = normTxt(g);
+        return v === 'boy' || v === 'boys' || v === 'male' || v === 'm' || v === 'gent' || v === 'gents' || v === 'man' || v === 'men';
+      };
+      const isFemale = (g) => {
+        const v = normTxt(g);
+        return v === 'girl' || v === 'girls' || v === 'female' || v === 'f' || v === 'lady' || v === 'ladies' || v === 'woman' || v === 'women';
+      };
+      const st = Array.isArray(schoolTeachersList) ? schoolTeachersList : [];
+      const dt = Array.isArray(districtTeachersList) ? districtTeachersList : [];
+      const roleOf = (r) => normTxt(r.role || r.member || r.designation || r.roleName || r.type || r.category);
+      const isSchoolTeacherRole = (v) => {
+        const r = normTxt(v);
+        return r === 'teacher' || r === 'accompanying teacher' || r === 'accompanying_teacher';
+      };
+      const isGuruRole = (v) => {
+        const r = normTxt(v);
+        return r === 'guru' || r === 'district guru' || r === 'dist guru';
+      };
+      // School card should reflect ALL accompanying staff reported from schools (any role)
+      const stOnlyTeachers = st; // no role filter here to match the card's total
+      const dtOnlyGurus = dt; // no role filter to align with displayed total if it aggregates all district roles
+      const genderOf = (r) => r?.gender ?? r?.sex ?? r?.g ?? r?.genderType;
+      const schoolTeacherMale = stOnlyTeachers.reduce((a, r) => a + (isMale(genderOf(r)) ? 1 : 0), 0);
+      const schoolTeacherFemale = stOnlyTeachers.reduce((a, r) => a + (isFemale(genderOf(r)) ? 1 : 0), 0);
+      const districtGuruMale = dtOnlyGurus.reduce((a, r) => a + (isMale(genderOf(r)) ? 1 : 0), 0);
+      const districtGuruFemale = dtOnlyGurus.reduce((a, r) => a + (isFemale(genderOf(r)) ? 1 : 0), 0);
+
+      setTeachers({
+        ...(to || { reported: { total: 0, male: 0, female: 0, other: 0 }, yetToReport: { total: 0, male: 0, female: 0, other: 0 } }),
+        reported: {
+          ...((to || {}).reported || {}),
+          schoolTeacherMale,
+          schoolTeacherFemale,
+          districtGuruMale,
+          districtGuruFemale,
+        }
+      });
 
       const agg = (arr, scope) => {
         const map = new Map();
@@ -656,8 +703,9 @@ export default function ITAdminOverview() {
                   sp.set('frozen','true');
                   window.location.assign(`/it-admin/reports/teachers-by-school?${sp.toString()}`);
                 }}>{teachers?.reported?.schoolTeacher || 0}</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill">Yet to Report - {teachers?.yetToReport?.schoolTeacher || 0}</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+                  <button className="btn pill">Gents - {teachers?.reported?.schoolTeacherMale || 0}</button>
+                  <button className="btn pill">Ladies - {teachers?.reported?.schoolTeacherFemale || 0}</button>
                 </div>
               </div>
 
@@ -685,8 +733,9 @@ export default function ITAdminOverview() {
                   sp.set('frozen','true');
                   window.location.assign(`/it-admin/reports/teachers?${sp.toString()}`);
                 }}>{teachers?.reported?.districtGuru || 0}</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button className="btn pill" >Yet to Report - {teachers?.yetToReport?.districtGuru || 0}</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+                  <button className="btn pill">Gents - {teachers?.reported?.districtGuruMale || 0}</button>
+                  <button className="btn pill">Ladies - {teachers?.reported?.districtGuruFemale || 0}</button>
                 </div>
               </div>
 
