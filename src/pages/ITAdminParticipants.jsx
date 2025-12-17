@@ -110,6 +110,56 @@ export default function ITAdminParticipants() {
     } finally { setLoading(false); }
   };
 
+  // Scoped styles for the Edit Participant SweetAlert modal
+  const editModalStyles = `
+    .itadmin-edit-modal {
+      border-radius: 20px !important;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(226,232,240,0.8) !important;
+      border: 1px solid #e2e8f0 !important;
+      padding: 14px 16px 16px 12px !important;
+    }
+    .itadmin-edit-modal .swal2-html-container {
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow-x: hidden !important;
+    }
+    .itadmin-edit-modal .swal2-title {
+      text-align: left !important;
+      font-weight: 700 !important;
+      font-size: 20px !important;
+      margin: 0 0 10px 0 !important;
+    }
+    .itadmin-edit-modal .swal2-form-row { margin: 0 0 12px 0; }
+    .itadmin-edit-modal .swal2-form-row label { display:block; margin-bottom:6px; font-weight:600; color:#0f172a; }
+    .itadmin-edit-modal .swal2-input,
+    .itadmin-edit-modal .swal2-select {
+      width: 100% !important;
+      max-width: 560px !important;
+      padding: 12px 14px !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      font-size: 14px !important;
+      box-shadow: inset 0 1px 2px rgba(16,24,40,0.04) !important;
+      outline: none !important;
+      box-sizing: border-box !important;
+      background: #ffffff !important;
+      border-style: solid !important;
+      min-height: 44px !important;
+    }
+    .itadmin-edit-modal .swal2-input { height: 44px !important; -webkit-appearance: none; appearance: none; }
+    .itadmin-edit-modal .swal2-select { height: 44px !important; -webkit-appearance: none; appearance: none; }
+    .itadmin-edit-modal .swal2-input:focus,
+    .itadmin-edit-modal .swal2-select:focus {
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15), inset 0 1px 2px rgba(16,24,40,0.04) !important;
+    }
+    .itadmin-edit-modal .swal2-styled:hover { filter: brightness(0.98); }
+    .itadmin-edit-modal .swal2-actions { width:100%; display:flex; justify-content: space-between; padding: 0 4px; }
+    .itadmin-edit-modal .swal2-actions .swal2-styled { min-width: 120px; padding: 10px 18px; border-radius: 10px; font-weight: 700; }
+    .itadmin-edit-modal .swal2-actions .swal2-confirm { background: #6366f1 !important; }
+    .itadmin-edit-modal .swal2-actions .swal2-cancel { background: #475569 !important; color:#fff !important; }
+  `;
+
   useEffect(() => { load(); }, [scope, districtId, schoolName, eventId, present, frozen, gender, group, q]);
 
   // Scroll-to-top button visibility
@@ -157,38 +207,42 @@ export default function ITAdminParticipants() {
   const { value: formValues } = await Swal.fire({
     title: "Edit Participant",
     html: `
-      <input id="swal-name" class="swal2-input" placeholder="Name" value="${row.name || ""}">
-     <div style="display: flex; align-items: center; gap: 10px;">
-  <label style="width: 80px;">Class:</label>
+      <div style="text-align: left;">
+        <div class="swal2-form-row">
+          <label><strong>Name:</strong></label>
+          <input id="swal-name" class="swal2-input" placeholder="Name" value="${row.name || ""}" style="width:100%; margin: 8px 0 0 0;">
+        </div>
 
-  <select id="swal-class" class="swal2-input" style="margin: 0;">
-    <option value="">Select Class</option>
-    <option value="6" ${row.className === "6" ? "selected" : ""}>6</option>
-    <option value="7" ${row.className === "7" ? "selected" : ""}>7</option>
-    <option value="8" ${row.className === "8" ? "selected" : ""}>8</option>
-    <option value="9" ${row.className === "9" ? "selected" : ""}>9</option>
-  </select>
-</div>
+        <div class="swal2-form-row">
+          <label><strong>Class:</strong></label>
+          <select id="swal-class" class="swal2-select" style="width:100%; margin: 8px 0 0 0;">
+            <option value="">Select Class</option>
+            <option value="6" ${row.className === "6" ? "selected" : ""}>6</option>
+            <option value="7" ${row.className === "7" ? "selected" : ""}>7</option>
+            <option value="8" ${row.className === "8" ? "selected" : ""}>8</option>
+            <option value="9" ${row.className === "9" ? "selected" : ""}>9</option>
+          </select>
+        </div>
 
-
-      <div style="text-align:left; margin-top:10px;margin-left:82px">
-        <label><strong>Gender:</strong></label>
-
-        <label style="margin-right:15px;">
-          <input type="radio" name="swal-gender" value="boy" 
-            ${row.gender === "boy" ? "checked" : ""}> Boy
-        </label>
-
-        <label>
-          <input type="radio" name="swal-gender" value="girl" 
-            ${row.gender === "girl" ? "checked" : ""}> Girl
-        </label>
+        <div class="swal2-form-row">
+          <label><strong>Gender:</strong></label><br>
+          <div style="display:flex; gap: 16px; margin: 8px 0; align-items:center;">
+            <label style="display:flex; align-items:center; gap:6px;">
+              <input type="radio" name="swal-gender" value="boy" ${row.gender === "boy" ? "checked" : ""}> Boy
+            </label>
+            <label style="display:flex; align-items:center; gap:6px;">
+              <input type="radio" name="swal-gender" value="girl" ${row.gender === "girl" ? "checked" : ""}> Girl
+            </label>
+          </div>
+        </div>
       </div>
     `,
     focusConfirm: false,
     showCloseButton: true,
     showCancelButton: true,
     cancelButtonText: "Close",
+    width: '600px',
+    customClass: { popup: 'itadmin-edit-modal' },
 
     preConfirm: () => ({
       name: document.getElementById("swal-name").value,
@@ -597,7 +651,9 @@ export default function ITAdminParticipants() {
   };
 
   return (
-    <DashboardLayout
+    <>
+      <style>{editModalStyles}</style>
+      <DashboardLayout
       title="IT Admin Dashboard"
       sidebarItems={sidebarItems}
       activeKey="participants"
@@ -768,16 +824,16 @@ export default function ITAdminParticipants() {
 
         {showAdd && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-            <div style={{ background: '#ffffff', borderRadius: 16, width: 'min(720px, 96vw)', maxHeight: '90vh', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' }}>
-              <div style={{ padding: 20, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
-                <h3 style={{ margin: 0, fontSize: 18 }}>Add Participant</h3>
-                <button onClick={() => { setShowAdd(false); }} style={{ background: 'transparent', border: 'none', color: '#0ea5e9', fontWeight: 600, cursor: 'pointer' }}>Close</button>
+            <div style={{ background: '#ffffff', borderRadius: 20, width: 'min(900px, 96vw)', maxHeight: '90vh', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(226,232,240,0.8)' }}>
+              <div style={{ padding: 24, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Add Participant</h3>
+                <button onClick={() => { setShowAdd(false); }} style={{ background: 'transparent', border: 'none', color: '#0ea5e9', fontWeight: 700, cursor: 'pointer' }}>Close</button>
               </div>
               <form onSubmit={submitAdd}>
-                <div style={{ padding: 20, display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+                <div style={{ padding: 24, display: 'grid', gap: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
                   <div style={{ display: 'grid', gap: 6 }}>
                     <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Participant Type</label>
-                    <select value={addType} onChange={(e) => { setAddType(e.target.value); setAddEventId(""); }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }}>
+                    <select value={addType} onChange={(e) => { setAddType(e.target.value); setAddEventId(""); }} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', fontSize: 14, boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.04)' }}>
                       <option value="">Select type</option>
                       <option value="school">School</option>
                       <option value="district">District</option>
@@ -786,7 +842,7 @@ export default function ITAdminParticipants() {
 
                   <div style={{ display: 'grid', gap: 6 }}>
                     <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Select District</label>
-                    <select value={addDistrictId} onChange={(e) => { setAddDistrictId(e.target.value); setAddSchoolId(""); setAddEventId(""); }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }}>
+                    <select value={addDistrictId} onChange={(e) => { setAddDistrictId(e.target.value); setAddSchoolId(""); setAddEventId(""); }} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', fontSize: 14, boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.04)' }}>
                       <option value="">Select district</option>
                       {districts.map((d) => (
                         <option key={d._id} value={d._id}>{d.districtName}</option>
@@ -797,7 +853,7 @@ export default function ITAdminParticipants() {
                   {addType === 'school' && (
                     <div style={{ display: 'grid', gap: 6 }}>
                       <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Select School</label>
-                      <select value={addSchoolId} onChange={(e) => { setAddSchoolId(e.target.value); setAddEventId(""); }} disabled={!addDistrictId} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none', background: !addDistrictId ? '#f1f5f9' : 'white' }}>
+                      <select value={addSchoolId} onChange={(e) => { setAddSchoolId(e.target.value); setAddEventId(""); }} disabled={!addDistrictId} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', background: !addDistrictId ? '#f1f5f9' : 'white', fontSize: 14, boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.04)' }}>
                         <option value="">Select school</option>
                         {modalSchools.map((s) => (
                           <option key={s._id} value={s._id}>{s.schoolName}</option>
@@ -809,7 +865,7 @@ export default function ITAdminParticipants() {
                   {(addType === 'district' || (addType === 'school' && addSchoolId)) && (
                     <div style={{ display: 'grid', gap: 6 }}>
                       <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Select Event</label>
-                      <select value={addEventId} onChange={(e) => setAddEventId(e.target.value)} disabled={computingEvents} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none', background: computingEvents ? '#f1f5f9' : 'white' }}>
+                      <select value={addEventId} onChange={(e) => setAddEventId(e.target.value)} disabled={computingEvents} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', background: computingEvents ? '#f1f5f9' : 'white', fontSize: 14, boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.04)' }}>
                         <option value="">{computingEvents ? 'Loading events...' : 'Select event'}</option>
                         {modalEvents.map((ev) => (
                           <option key={ev._id} value={ev._id}>{ev.title}</option>
@@ -824,7 +880,7 @@ export default function ITAdminParticipants() {
                       {addType === 'school' && (
                         <div style={{ display: 'grid', gap: 6 }}>
                           <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Junior or Senior</label>
-                          <select value={addGroup} disabled style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none', background: '#f1f5f9' }}>
+                          <select value={addGroup} disabled style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', background: '#f1f5f9', fontSize: 14 }}>
                             <option value="">Select audience</option>
                             <option value="junior">Junior</option>
                             <option value="senior">Senior</option>
@@ -833,11 +889,11 @@ export default function ITAdminParticipants() {
                       )}
                       <div style={{ display: 'grid', gap: 6 }}>
                         <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Name</label>
-                        <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Participant name" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }} />
+                        <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="Participant name" style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', fontSize: 14, boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.04)' }} />
                       </div>
                       <div style={{ display: 'grid', gap: 6 }}>
                         <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Boy or Girl</label>
-                        <select value={addGender} onChange={(e) => setAddGender(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }}>
+                        <select value={addGender} onChange={(e) => setAddGender(e.target.value)} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', fontSize: 14, boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.04)' }}>
                           <option value="">Select gender</option>
                           <option value="boy">Boy</option>
                           <option value="girl">Girl</option>
@@ -845,7 +901,7 @@ export default function ITAdminParticipants() {
                       </div>
                       <div style={{ display: 'grid', gap: 6 }}>
                         <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Class</label>
-                        <select value={addClassName} onChange={(e) => setAddClassName(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }}>
+                        <select value={addClassName} onChange={(e) => setAddClassName(e.target.value)} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', fontSize: 14, boxShadow: 'inset 0 1px 2px rgba(16,24,40,0.04)' }}>
                           <option value="">Select class</option>
                           <option value="6">6</option>
                           <option value="7">7</option>
@@ -856,9 +912,9 @@ export default function ITAdminParticipants() {
                     </>
                   )}
                 </div>
-                <div style={{ padding: 16, borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <button type="submit" className="btn" style={{ backgroundColor: '#16a34a', color: 'white' }}>Save</button>
-                  <button type="button" className="btn" onClick={() => { setShowAdd(false); }} style={{ background: '#475569', color: 'white' }}>Cancel</button>
+                <div style={{ padding: 20, borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button type="submit" className="btn" style={{ backgroundColor: '#16a34a', color: 'white', padding: '12px 24px', borderRadius: 10, fontWeight: 700, boxShadow: '0 4px 12px rgba(22,163,74,0.35)', border: 'none' }}>Save</button>
+                  <button type="button" className="btn" onClick={() => { setShowAdd(false); }} style={{ background: '#475569', color: 'white', padding: '12px 24px', borderRadius: 10, fontWeight: 700, boxShadow: '0 4px 12px rgba(2,6,23,0.25)', border: 'none' }}>Cancel</button>
                 </div>
               </form>
             </div>
@@ -866,5 +922,6 @@ export default function ITAdminParticipants() {
         )}
       </div>
     </DashboardLayout>
+    </>
   );
 }

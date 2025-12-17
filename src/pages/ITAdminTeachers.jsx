@@ -185,17 +185,13 @@ export default function ITAdminTeachers() {
             <label><strong>Mobile No</strong></label>
             <input id="swal-phone" class="swal2-input" placeholder="Mobile" inputmode="numeric" pattern="\\d{10}" maxlength="10" />
           </div>
-          <div id="row-gender" class="field full" style="display:none;">
+          <div id="row-gender" class="field" style="display:none;">
             <label><strong>Gender</strong></label>
             <select id="swal-gender" class="swal2-select">
               <option value="">Select</option>
               <option value="boy">Gents</option>
               <option value="girl">Ladies</option>
             </select>
-          </div>
-          <div id="row-other-role" class="field full" style="display:none;">
-            <label><strong>Specify Role</strong></label>
-            <input id="swal-other-role" class="swal2-input" placeholder="Enter role" />
           </div>
         </div>
       </div>
@@ -204,17 +200,19 @@ export default function ITAdminTeachers() {
     const { value } = await Swal.fire({
       title: 'Add Participant',
       html: typeHtml('school'),
-      width: '720px',
+      width: '900px',
       focusConfirm: false,
       showCloseButton: true,
       showCancelButton: true,
       cancelButtonText: 'Cancel',
       confirmButtonText: 'Save',
       confirmButtonColor: '#16a34a',
+      customClass: {
+        popup: 'itadmin-add-modal'
+      },
       didOpen: () => {
         const typeSel = document.getElementById('swal-type');
         const roleSel = document.getElementById('swal-role');
-        const otherRoleRow = document.getElementById('row-other-role');
         const distSel = document.getElementById('swal-district');
         const schoolRow = document.getElementById('row-school');
         const schoolSel = document.getElementById('swal-school');
@@ -227,7 +225,6 @@ export default function ITAdminTeachers() {
         const renderRoleOptions = () => {
           const t = typeSel.value === 'district' ? 'district' : 'teacher';
           roleSel.innerHTML = ROLE_OPTIONS[t].map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
-          otherRoleRow.style.display = 'none';
         };
 
         const loadSchoolsFor = async (districtId) => {
@@ -253,16 +250,13 @@ export default function ITAdminTeachers() {
           rowName.style.display = canShowRest ? 'block' : 'none';
           rowPhone.style.display = canShowRest ? 'block' : 'none';
           rowGender.style.display = canShowRest ? 'block' : 'none';
-          otherRoleRow.style.display = (canShowRest && roleSel.value === 'other') ? 'block' : 'none';
         };
 
         typeSel?.addEventListener('change', () => {
           renderRoleOptions();
           refreshVisibility();
         });
-        roleSel?.addEventListener('change', () => {
-          otherRoleRow.style.display = roleSel.value === 'other' ? 'block' : 'none';
-        });
+        // No additional field when role changes
         distSel?.addEventListener('change', (e) => {
           if (typeSel.value === 'school') loadSchoolsFor(e.target.value);
           refreshVisibility();
@@ -286,7 +280,6 @@ export default function ITAdminTeachers() {
         const schoolName = document.getElementById('swal-school')?.value || '';
         const roleSel = document.getElementById('swal-role');
         const selectedRole = roleSel ? roleSel.value : '';
-        const otherRole = document.getElementById('swal-other-role')?.value || '';
         const name = document.getElementById('swal-name').value;
         const phoneRaw = document.getElementById('swal-phone').value;
         const phone = (phoneRaw || '').replace(/\D/g, '').slice(0, 10);
@@ -306,7 +299,7 @@ export default function ITAdminTeachers() {
           name,
           phone,
           gender,
-          member: selectedRole === 'other' ? otherRole : selectedRole,
+          member: selectedRole,
         };
       }
     });
@@ -458,6 +451,7 @@ export default function ITAdminTeachers() {
       cancelButtonText: "Close",
       denyButtonText: "Remove Event",
       denyButtonColor: '#ef4444',
+      customClass: { popup: 'itadmin-edit-modal' },
       didOpen: () => {
         const roleSelect = document.getElementById('swal-role');
         const userTypeSelect = document.getElementById('swal-user-type');
@@ -474,6 +468,10 @@ export default function ITAdminTeachers() {
           return 'school';
         };
 
+        // If the participant already has an assigned event, capture it so we can show it by default
+        const assignedEventId = row.otherEventId ?? row.eventId;
+        const assignedEventTitle = row.eventTitle || row.event || row.eventName || (assignedEventId ? `Event ${assignedEventId}` : '');
+
         const refreshOtherEventsOptions = () => {
           if (!otherEventSelect) return;
           const targetLocal = recomputeTarget();
@@ -483,15 +481,28 @@ export default function ITAdminTeachers() {
             return !!ev.forSchool;
           });
 
-          const currentValue = otherEventSelect.value;
+          // Use current select value if user already interacted, otherwise default to the assigned event id
+          const initialValue = otherEventSelect.value || (assignedEventId ? String(assignedEventId) : '');
           otherEventSelect.innerHTML = '<option value="">No Other Event</option>';
+
+          // Add matching remaining events first
           filtered.forEach(ev => {
             const opt = document.createElement('option');
             opt.value = ev._id;
             opt.textContent = ev.title;
-            if (currentValue && currentValue === String(ev._id)) opt.selected = true;
+            if (initialValue && initialValue === String(ev._id)) opt.selected = true;
             otherEventSelect.appendChild(opt);
           });
+
+          // If assigned event exists but wasn't part of the remaining list, add it as a fallback option and select it
+          const assignedPresentInFiltered = filtered.some(ev => String(ev._id) === String(assignedEventId));
+          if (assignedEventId && !assignedPresentInFiltered) {
+            const opt = document.createElement('option');
+            opt.value = String(assignedEventId);
+            opt.textContent = assignedEventTitle || `Event ${assignedEventId}`;
+            if (!otherEventSelect.value || initialValue === String(assignedEventId)) opt.selected = true;
+            otherEventSelect.appendChild(opt);
+          }
         };
 
         // Role dropdown: show/hide other-role input and refresh events
@@ -805,6 +816,27 @@ export default function ITAdminTeachers() {
 
   // Add some styles for the form
   const styles = `
+    /* Popup: match participants modal look */
+    div.swal2-container .itadmin-add-modal {
+      border-radius: 20px !important;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(226,232,240,0.8) !important;
+      border: 1px solid #e2e8f0 !important;
+      padding: 24px !important;
+    }
+    /* Edit modal look to match Add Participant */
+    div.swal2-container .itadmin-edit-modal {
+      border-radius: 20px !important;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(226,232,240,0.8) !important;
+      border: 1px solid #e2e8f0 !important;
+      padding: 24px !important;
+    }
+    div.swal2-container .swal2-title {
+      text-align: left !important;
+      font-weight: 700 !important;
+      font-size: 20px !important;
+      margin: 0 0 10px 0 !important;
+    }
+
     .swal2-form-row {
       margin-bottom: 15px;
     }
@@ -812,6 +844,14 @@ export default function ITAdminTeachers() {
       display: block;
       margin-bottom: 5px;
       font-weight: 600;
+    }
+    /* Centered labels above fields like reference design */
+    .two-col .field > label {
+      display: block;
+      text-align: left;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #0f172a;
     }
       div.swal2-container .swal2-input,
 div.swal2-container .swal2-file,
@@ -824,33 +864,61 @@ div.swal2-container .swal2-checkbox {
 
     .swal2-select {
       width: 100%;
-      padding: 8px;
-      border: 1px solid #d9d9d9;
-      border-radius: 4px;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
       font-size: 14px;
+      box-shadow: inset 0 1px 2px rgba(16,24,40,0.04);
+      outline: none;
+      box-sizing: border-box;
+      display: block;
     }
     .swal2-input {
-      margin: 8px 0;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      display: block !important;
+      padding: 12px 14px !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      font-size: 14px !important;
+      box-shadow: inset 0 1px 2px rgba(16,24,40,0.04) !important;
+      margin: 0 !important;
+    }
+    .two-col .field input,
+    .two-col .field select {
+      width: 100%;
     }
     /* Two column grid layout for the add participant form */
     .two-col-container { padding-top: 4px; }
     .two-col {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px 20px;
+      grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
+      gap: 20px 24px;
     }
-    .two-col .field { display: flex; flex-direction: column; }
+    .two-col .field { display: flex; flex-direction: column; align-items: stretch; }
     .two-col .field.full { grid-column: 1 / -1; }
+    /* Hide any default SweetAlert2 built-in input rendered at the root of the popup */
+    div.swal2-container .swal2-popup > input.swal2-input,
+    div.swal2-container .swal2-popup > select.swal2-select,
+    div.swal2-container .swal2-popup > textarea.swal2-textarea {
+      display: none !important;
+    }
     /* SweetAlert2 actions aligned like Cancel left, Save right */
     div.swal2-container .swal2-actions {
       width: 100%;
       display: flex;
       justify-content: space-between;
-      padding: 0 8px;
+      padding: 0 4px;
     }
     div.swal2-container .swal2-actions .swal2-styled {
-      min-width: 120px;
+      min-width: 140px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(2,6,23,0.15);
     }
+    div.swal2-container .swal2-actions .swal2-confirm { background: #16a34a !important; }
+    div.swal2-container .swal2-actions .swal2-cancel { background: #475569 !important; color: #fff !important; }
   `;
 
   return (
