@@ -7,7 +7,7 @@ export default function ITAdminTeachersSchoolReport() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
    const memberLabels = {  parents: "Parents",
@@ -67,12 +67,37 @@ export default function ITAdminTeachersSchoolReport() {
       const headers = ["School Name", ...roles.map(role => memberLabels[role] || role), "Total"];
       const body = rows.map(r => [r.schoolName, ...roles.map(k => r.byRole[k] || 0), r.total]);
       const foot = ["Grand Total", ...roles.map(k => grand[k] || 0), grand.total || 0];
+      // Header logos and centered title (same style as participants report)
+      const loadImageDataUrl = async (src) => {
+        try {
+          const resp = await fetch(src);
+          const blob = await resp.blob();
+          return await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        } catch { return null; }
+      };
+      const [leftLogoData, rightLogoData] = await Promise.all([
+        loadImageDataUrl('/images/SSSSO.png'),
+        loadImageDataUrl('/images/SSSBV-1-removebg-preview.png'),
+      ]);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const marginX = 40;
+      const sideW = 60, sideH = 60;
+      const yTop = 16;
+      if (leftLogoData) { try { doc.addImage(leftLogoData, 'PNG', marginX, yTop, sideW, sideH); } catch {} }
+      if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
+      const midX = pageWidth / 2;
+      doc.setFontSize(12);
+      doc.text('Aum Sri Sai Ram', midX, yTop + 14, { align: 'center' });
       doc.setFontSize(14);
-      doc.text("Teachers by School", 40, 32);
+      doc.text('Total Accompanist Reported from Schools', midX, yTop + 32, { align: 'center' });
       autoTable(doc, {
         head: [headers],
         body: [...body, foot],
-        startY: 48,
+        startY: yTop + sideH + 44,
         styles: { fontSize: 10 },
         headStyles: { fillColor: [71, 85, 105] },
       });

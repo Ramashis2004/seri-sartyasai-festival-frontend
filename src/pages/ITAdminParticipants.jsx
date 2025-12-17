@@ -9,7 +9,7 @@ export default function ITAdminParticipants() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
   const [scope, setScope] = useState("all");
@@ -824,7 +824,7 @@ export default function ITAdminParticipants() {
                       {addType === 'school' && (
                         <div style={{ display: 'grid', gap: 6 }}>
                           <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Junior or Senior</label>
-                          <select value={addGroup} onChange={(e) => setAddGroup(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none' }}>
+                          <select value={addGroup} disabled style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none', background: '#f1f5f9' }}>
                             <option value="">Select audience</option>
                             <option value="junior">Junior</option>
                             <option value="senior">Senior</option>
@@ -857,8 +857,8 @@ export default function ITAdminParticipants() {
                   )}
                 </div>
                 <div style={{ padding: 16, borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <button type="button" className="btn" onClick={() => { setShowAdd(false); }} style={{ background: 'white', border: '1px solid #e2e8f0' }}>Cancel</button>
                   <button type="submit" className="btn" style={{ backgroundColor: '#16a34a', color: 'white' }}>Save</button>
+                  <button type="button" className="btn" onClick={() => { setShowAdd(false); }} style={{ background: '#475569', color: 'white' }}>Cancel</button>
                 </div>
               </form>
             </div>

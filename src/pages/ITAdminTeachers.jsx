@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import { itListTeachers, itUpdateTeacher,itDeleteTeacher, itFinalizeTeachers, itCreateTeacher } from "../api/itAdminApi";
+import { itListTeachers, itUpdateTeacher,itDeleteTeacher, itFinalizeTeachers, itCreateTeacher, itListRemainingOtherEvents } from "../api/itAdminApi";
 import districtApi from "../api/districtApi";
 import adminApi from "../api/adminApi";
 import Swal from "sweetalert2";
@@ -37,7 +37,7 @@ export default function ITAdminTeachers() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
   const [scope, setScope] = useState("all");
@@ -115,10 +115,11 @@ export default function ITAdminTeachers() {
       // Do NOT pass eventId to backend, we filter Other Events client-side
       const data = await itListTeachers({ scope, districtId, schoolName, present, frozen, q });
       
-      // Ensure each record has an eventTitle; fall back to its own event id
+      // Ensure each record has an eventTitle; only reflect Other Event assignment
+      // Do not fall back to base eventId so that clearing Other Event shows blank
       const processedData = Array.isArray(data) ? data.map(item => ({
         ...item,
-        eventTitle: item.eventTitle || (item.otherEventId ? `Event ${item.otherEventId}` : (item.eventId ? `Event ${item.eventId}` : ''))
+        eventTitle: item.eventTitle || (item.otherEventId ? `Event ${item.otherEventId}` : '')
       })) : [];
       
       setItems(processedData);
@@ -361,11 +362,32 @@ export default function ITAdminTeachers() {
 
   const onEdit = async (row) => {
     // Determine user type based on role
-    const isDistrict = isDistrictRole(row.role || row.member);
+    const rawRole = (row.role || row.member || '').toLowerCase();
+    const isDistrict = isDistrictRole(rawRole);
     const userType = isDistrict ? 'district' : 'teacher';
-    const currentRole = (row.role || row.member || '').toLowerCase();
+    const currentRole = rawRole;
     const showOtherInput = !ROLE_OPTIONS[userType].some(opt => opt.value === currentRole) && currentRole !== '';
-    
+
+    // Decide which remaining OtherEvents list to load based on role
+    // Treat anything that displays as "Parents" as parents-role
+    const roleText = (getRoleText(row) || '').toLowerCase();
+    const isParentsRole = currentRole === 'parents' || roleText === 'parents';
+
+    let target = 'school';
+    if (isParentsRole) target = 'parents';
+    else if (isDistrict) target = 'district';
+
+    let remainingEvents = [];
+    try {
+      const params = { target, districtId: row.districtId };
+      if (target === 'school') {
+        params.schoolName = row.schoolName || '';
+      }
+      remainingEvents = await itListRemainingOtherEvents(params) || [];
+    } catch {
+      remainingEvents = [];
+    }
+
     // Create the HTML for the form
     const formHtml = `
       <div style="text-align: left;">
@@ -415,49 +437,85 @@ export default function ITAdminTeachers() {
           <label><strong>Specify Role:</strong></label>
           <input id="swal-other-role" class="swal2-input" placeholder="Enter role" value="${showOtherInput ? (row.role || row.member || '') : ''}">
         </div>
+
+        <div class="swal2-form-row">
+          <label><strong>Other Event (unassigned):</strong></label>
+          <select id="swal-other-event" class="swal2-select" style="width: 100%; margin: 8px 0 0 0;">
+            <option value="">No Other Event</option>
+          </select>
+        </div>
       </div>
     `;
 
-    const { value: formValues } = await Swal.fire({
+    const result = await Swal.fire({
       title: "Edit Teacher/Guru",
       html: formHtml,
       width: '600px',
       focusConfirm: false,
       showCloseButton: true,
       showCancelButton: true,
+      showDenyButton: true,
       cancelButtonText: "Close",
+      denyButtonText: "Remove Event",
+      denyButtonColor: '#ef4444',
       didOpen: () => {
-        // Add event listener for role change
         const roleSelect = document.getElementById('swal-role');
         const userTypeSelect = document.getElementById('swal-user-type');
         const otherRoleContainer = document.getElementById('swal-other-role-container');
-        
+        const otherEventSelect = document.getElementById('swal-other-event');
+
+        const recomputeTarget = () => {
+          const ut = userTypeSelect ? userTypeSelect.value : 'teacher';
+          const roleVal = (roleSelect ? roleSelect.value : '').toLowerCase();
+          const displayRole = (getRoleText({ ...row, role: roleVal || row.role, member: roleVal || row.member }) || '').toLowerCase();
+          const parentsRole = roleVal === 'parents' || displayRole === 'parents';
+          if (parentsRole) return 'parents';
+          if (ut === 'district') return 'district';
+          return 'school';
+        };
+
+        const refreshOtherEventsOptions = () => {
+          if (!otherEventSelect) return;
+          const targetLocal = recomputeTarget();
+          const filtered = (remainingEvents || []).filter(ev => {
+            if (targetLocal === 'parents') return !!ev.forParents;
+            if (targetLocal === 'district') return !!ev.forDistrict;
+            return !!ev.forSchool;
+          });
+
+          const currentValue = otherEventSelect.value;
+          otherEventSelect.innerHTML = '<option value="">No Other Event</option>';
+          filtered.forEach(ev => {
+            const opt = document.createElement('option');
+            opt.value = ev._id;
+            opt.textContent = ev.title;
+            if (currentValue && currentValue === String(ev._id)) opt.selected = true;
+            otherEventSelect.appendChild(opt);
+          });
+        };
+
+        // Role dropdown: show/hide other-role input and refresh events
         if (roleSelect) {
           roleSelect.addEventListener('change', (e) => {
             if (otherRoleContainer) {
               otherRoleContainer.style.display = e.target.value === 'other' ? 'block' : 'none';
             }
+            refreshOtherEventsOptions();
           });
         }
-        
+
+        // User type dropdown: rebuild role options and refresh events
         if (userTypeSelect) {
           userTypeSelect.addEventListener('change', (e) => {
-            const roleSelect = document.getElementById('swal-role');
             const selectedType = e.target.value;
             const roles = ROLE_OPTIONS[selectedType];
-            
+
             if (roleSelect) {
-              // Save current role if it's an 'other' value
               const currentValue = roleSelect.value;
               const isOtherValue = currentValue && ![...ROLE_OPTIONS.teacher, ...ROLE_OPTIONS.district].some(opt => opt.value === currentValue);
-              
-              roleSelect.innerHTML = [
-                ...roles.map(opt => 
-                  `<option value="${opt.value}">${opt.label}</option>`
-                )
-              ].join('');
-              
-              // If we had an 'other' value, add it back
+
+              roleSelect.innerHTML = roles.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
+
               if (isOtherValue && currentValue) {
                 const option = document.createElement('option');
                 option.value = currentValue;
@@ -465,21 +523,26 @@ export default function ITAdminTeachers() {
                 option.selected = true;
                 roleSelect.appendChild(option);
               }
-              
-              // Show/hide other role input based on selection
-              const otherRoleContainer = document.getElementById('swal-other-role-container');
+
               if (otherRoleContainer) {
                 otherRoleContainer.style.display = roleSelect.value === 'other' ? 'block' : 'none';
               }
             }
+
+            refreshOtherEventsOptions();
           });
         }
+
+        // Initial fill of other-events select based on current type/role
+        refreshOtherEventsOptions();
       },
       preConfirm: () => {
         const userType = document.getElementById('swal-user-type').value;
         const roleSelect = document.getElementById('swal-role');
         const selectedRole = roleSelect ? roleSelect.value : '';
         const otherRole = document.getElementById('swal-other-role') ? document.getElementById('swal-other-role').value : '';
+        const otherEventSel = document.getElementById('swal-other-event');
+        const otherEventId = otherEventSel ? otherEventSel.value : '';
         
         return {
           name: document.getElementById("swal-name").value,
@@ -487,11 +550,31 @@ export default function ITAdminTeachers() {
           gender: (document.querySelector('input[name="swal-gender"]:checked')?.value || "").toLowerCase(),
           role: selectedRole === 'other' ? otherRole : selectedRole,
           member: selectedRole === 'other' ? otherRole : selectedRole,
-          userType: userType
+          userType: userType,
+          otherEventId: otherEventId || undefined,
         };
       }
     });
 
+    // If user clicked "Remove Event"
+    if (result?.isDenied) {
+      try {
+        setAnchorId(String(row._id));
+        // Backend expects a string; send empty string to signify removal
+        await itUpdateTeacher(row._id, { source: row.source, updates: { otherEventId: "" } });
+        setItems((prev) => (prev || []).map((it) => (
+          String(it._id) === String(row._id) ? { ...it, otherEventId: undefined, eventId: undefined, eventTitle: '' } : it
+        )));
+        await load();
+        await Swal.fire({ icon: 'success', title: 'Event removed', timer: 1500, showConfirmButton: false });
+      } catch (e) {
+        const msg = e?.response?.data?.message || 'Failed to remove event';
+        await Swal.fire({ icon: 'error', title: 'Remove failed', text: msg });
+      }
+      return;
+    }
+
+    const formValues = result?.value;
     if (!formValues) return;
 
     try {
@@ -943,7 +1026,7 @@ div.swal2-container .swal2-checkbox {
               zIndex: 1100,
             }}
             aria-label="Scroll to top"
-            title="Scroll to topp"
+            title="Scroll to top"
           >
             ↑
           </button>

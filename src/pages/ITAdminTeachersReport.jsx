@@ -7,7 +7,7 @@ export default function ITAdminTeachersReport() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
    const memberLabels = {
@@ -28,6 +28,7 @@ export default function ITAdminTeachersReport() {
   const [eventId] = useState(spInit.get("eventId") || "");
   const [scope] = useState(spInit.get("scope") || "");
   const [frozen] = useState(spInit.get("frozen") ?? "true");
+  
 
   const [roles, setRoles] = useState([]);
   const [rows, setRows] = useState([]);
@@ -53,7 +54,7 @@ export default function ITAdminTeachersReport() {
   useEffect(() => { load(); }, []);
 
   const toCSV = () => {
-    const header = ["District", ...roles.map(role => memberLabels[role] || role), "Grand Total"];
+    const header = ["District", ...roles.map(role => memberLabels[role] || role), " Total"];
     const body = rows.map(r => [r.districtName, ...roles.map(k => r.byRole[k] || 0), r.total]);
     const foot = ["Grand Total", ...roles.map(k => grand[k] || 0), grand.total || 0];
     const lines = [header, ...body, foot].map(arr => arr.join(","));
@@ -72,8 +73,9 @@ export default function ITAdminTeachersReport() {
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const bySchool = String(scope).toLowerCase() === 'school';
+      const byDistrict = String(scope).toLowerCase() === 'district';
       const firstCol = bySchool ? 'School Name' : 'District';
-      const headers = [firstCol, ...roles.map(role => memberLabels[role] || role), "Grand Total"];
+      const headers = [firstCol, ...roles.map(role => memberLabels[role] || role), "Total"];
       const body = rows.map(r => [bySchool ? (r.schoolName || '') : (r.districtName || ''), ...roles.map(k => r.byRole?.[k] || 0), r.total]);
       const foot = ["Grand Total", ...roles.map(k => grand[k] || 0), grand.total || 0];
       // Corner logos + centered mantra and title
@@ -89,9 +91,10 @@ export default function ITAdminTeachersReport() {
         } catch { return null; }
       };
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      // Keep logos consistent with other reports: SSSBV (left), SSSSO (right)
       const [leftLogoData, rightLogoData] = await Promise.all([
-        loadImageDataUrl(`${origin}/images/SSSSO.png`),
         loadImageDataUrl(`${origin}/images/SSSBV-1-removebg-preview.png`),
+        loadImageDataUrl(`${origin}/images/SSSSO.png`),
       ]);
       const pageWidth = doc.internal.pageSize.getWidth();
       const marginX = 40;
@@ -100,14 +103,15 @@ export default function ITAdminTeachersReport() {
       if (leftLogoData) { try { doc.addImage(leftLogoData, 'PNG', marginX, yTop, sideW, sideH); } catch {} }
       if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
       const midX = pageWidth / 2;
+      // Center the text near the top between the logos
       doc.setFontSize(12);
-      doc.text('Aum Sri Sai Ram', midX, yTop + sideH + 14, { align: 'center' });
+      doc.text('Aum Sri Sai Ram', midX, yTop + 14, { align: 'center' });
       doc.setFontSize(14);
-      doc.text(bySchool ? 'Teachers by School' : 'Teachers by District', midX, yTop + sideH + 34, { align: 'center' });
+      doc.text(bySchool ? 'Teachers by School' : byDistrict ? 'Total Accompanist Reported from Districts' : 'Total Accompanist Reported', midX, yTop + 32, { align: 'center' });
       autoTable(doc, {
         head: [headers],
         body: [...body, foot],
-        startY: yTop + sideH + 44,
+        startY: yTop + sideH + 40,
         styles: { fontSize: 10 },
         headStyles: { fillColor: [71, 85, 105] },
       });
@@ -123,7 +127,7 @@ export default function ITAdminTeachersReport() {
       const { saveAs } = await import("file-saver");
       const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, TextRun, AlignmentType } = docx;
 
-      const headerCells = ["District", ...roles.map(role => memberLabels[role] || role), "Grand Total"].map(t => new TableCell({
+      const headerCells = ["District", ...roles.map(role => memberLabels[role] || role), "Total"].map(t => new TableCell({
         width: { size: Math.max(10, Math.floor(100 / (roles.length + 2))), type: WidthType.PERCENTAGE },
         children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })], alignment: AlignmentType.CENTER })],
       }));
@@ -152,7 +156,11 @@ export default function ITAdminTeachersReport() {
   };
 
   return (
-    <DashboardLayout title="Teachers Report" sidebarItems={sidebarItems} activeKey="overview" onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}>
+    <DashboardLayout  title={
+    String(scope).toLowerCase() === "district"
+      ? "Teachers by District"
+      : "Total Accompanist Reported"
+  } sidebarItems={sidebarItems} activeKey="overview" onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}>
       <div style={{ display: 'grid', gap: 12 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button className="btn" onClick={() => window.history.back()}>Back</button>
@@ -172,7 +180,7 @@ export default function ITAdminTeachersReport() {
                   {roles.map((r) => (
                     <th key={r}>{memberLabels[r] || r}</th>
                   ))}
-                  <th>Grand Total</th>
+                  <th>Total</th>
                 </tr>
               </thead>
               <tbody>

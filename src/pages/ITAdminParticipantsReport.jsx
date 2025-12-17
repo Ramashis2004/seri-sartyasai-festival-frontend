@@ -8,7 +8,7 @@ export default function ITAdminParticipantsReport() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
   const spInit = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -17,6 +17,8 @@ export default function ITAdminParticipantsReport() {
   const [scope] = useState(spInit.get("scope") || ""); // school|district|""
   const [frozen] = useState(spInit.get("frozen") ?? "true");
   const [present] = useState(spInit.get("present") || "");
+  // Optional explicit title override via querystring: ?title=Total%20Students%20Reported
+  const [customTitle] = useState(spInit.get("title") || "");
 
   const [rows, setRows] = useState([]);
   const [grand, setGrand] = useState({ boy: 0, girl: 0, total: 0 });
@@ -24,6 +26,8 @@ export default function ITAdminParticipantsReport() {
   const [statusRows, setStatusRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+
 
   const load = async () => {
     try {
@@ -197,9 +201,9 @@ export default function ITAdminParticipantsReport() {
       if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
       const midX = pageWidth / 2;
       doc.setFontSize(12);
-      doc.text('Aum Sri Sai Ram', midX, yTop + sideH + 14, { align: 'center' });
+      doc.text('Aum Sri Sai Ram', midX, yTop + 14, { align: 'center' });
       doc.setFontSize(14);
-      doc.text('Reporting Status', midX, yTop + sideH + 34, { align: 'center' });
+      doc.text('Reporting Status', midX, yTop + 32, { align: 'center' });
       
       autoTable(doc, {
         head: [["Sl. No", "District", "School", "Students Reported From Schools"]],
@@ -250,7 +254,7 @@ export default function ITAdminParticipantsReport() {
       return;
     }
     const bySchool = scope === 'school';
-    const header = bySchool ? ["District", "School", "BOY", "GIRL", "Grand Total"] : ["District", "BOY", "GIRL", "Grand Total"];
+    const header = bySchool ? ["District", "School", "BOY", "GIRL", "Total"] : ["District", "BOY", "GIRL", " Total"];
     const body = rows.map(r => bySchool ? [r.districtName, r.schoolName, r.boy, r.girl, r.total] : [r.districtName, r.boy, r.girl, r.total]);
     const foot = ["Grand Total", grand.boy, grand.girl, grand.total];
     const lines = [header, ...body, foot].map(arr => arr.join(","));
@@ -273,7 +277,8 @@ export default function ITAdminParticipantsReport() {
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const bySchool = scope === 'school';
-      const headers = bySchool ? ["District", "School", "BOY", "GIRL", "Grand Total"] : ["District", "BOY", "GIRL", "Grand Total"];
+      const byDistrict=scope==='district';
+      const headers = bySchool ? ["District", "School", "BOY", "GIRL", "Total"] : ["District", "BOY", "GIRL", "Total"];
       const body = rows.map(r => bySchool ? [r.districtName, r.schoolName, r.boy, r.girl, r.total] : [r.districtName, r.boy, r.girl, r.total]);
       const foot = bySchool ? ["Grand Total", "", grand.boy, grand.girl, grand.total] : ["Grand Total", grand.boy, grand.girl, grand.total];
       const loadImageDataUrl = async (src) => {
@@ -299,9 +304,9 @@ export default function ITAdminParticipantsReport() {
       if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
       const midX = pageWidth / 2;
       doc.setFontSize(12);
-      doc.text('Aum Sri Sai Ram', midX, yTop + sideH + 14, { align: 'center' });
+      doc.text('Aum Sri Sai Ram', midX, yTop + 14, { align: 'center' });
       doc.setFontSize(14);
-      doc.text(bySchool ? 'Participants Both School & District' : 'Participants by District', midX, yTop + sideH + 34, { align: 'center' });
+      doc.text(bySchool ? 'Total Students Reported from Schools' : byDistrict ? 'Total Students Reported from Districts' : 'Total Students Reported', midX, yTop + 32, { align: 'center' });
       autoTable(doc, {
         head: [headers],
         body: [...body, foot],
@@ -309,7 +314,7 @@ export default function ITAdminParticipantsReport() {
         styles: { fontSize: 10 },
         headStyles: { fillColor: [71, 85, 105] },
       });
-      doc.save(`participants_${scope==='school'?'by_school':'by_district'}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`students_${scope==='school'?'by_school':'by_district'}_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (e) {
       toast.error("Please install jspdf and jspdf-autotable to export PDF");
     }
@@ -325,7 +330,7 @@ export default function ITAdminParticipantsReport() {
       const { saveAs } = await import("file-saver");
       const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, TextRun, AlignmentType } = docx;
       const bySchool = scope === 'school';
-      const cols = bySchool ? ["District", "School", "BOY", "GIRL", "Grand Total"] : ["District", "BOY", "GIRL", "Grand Total"];
+      const cols = bySchool ? ["District", "School", "BOY", "GIRL", "Total"] : ["District", "BOY", "GIRL", "Total"];
       const widthPct = bySchool ? [20, 30, 16, 16, 18] : [34, 22, 22, 22];
       const headerCells = cols.map((t, idx) => new TableCell({
         width: { size: widthPct[idx] || 20, type: WidthType.PERCENTAGE },
@@ -362,7 +367,7 @@ export default function ITAdminParticipantsReport() {
 
       const table = new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...bodyRows, footRow] });
 
-      const doc = new Document({ sections: [{ properties: {}, children: [new Paragraph({ text: scope === 'school' ? "Participants by School" : "Participants by District", heading: "Heading1" }), table] }] });
+      const doc = new Document({ sections: [{ properties: {}, children: [new Paragraph({ text: scope === 'school' ? "Total Students Reported from Schools" : "Participants by District", heading: "Heading1" }), table] }] });
       const blob = await Packer.toBlob(doc);
       saveAs(blob, `participants_${scope==='school'?'by_school':'by_district'}_${new Date().toISOString().split('T')[0]}.docx`);
     } catch (e) {
@@ -370,8 +375,19 @@ export default function ITAdminParticipantsReport() {
     }
   };
 
+ const pageTitle = customTitle?.trim()
+  ? customTitle
+  : present
+    ? "Total Students Reported"
+    : scope === "school"
+      ? "Students from School"
+      : scope === "district"
+        ? "Students from Districts"
+        : "Total Students Reported";
+
+
   return (
-    <DashboardLayout title="Participants Report" sidebarItems={sidebarItems} activeKey="overview" onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}>
+    <DashboardLayout title={pageTitle} sidebarItems={sidebarItems} activeKey="overview" onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}>
       <div style={{ display: 'grid', gap: 12 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button className="btn" onClick={() => window.history.back()}>Back</button>
@@ -423,7 +439,7 @@ export default function ITAdminParticipantsReport() {
                     {scope === 'school' && (<th>School</th>)}
                     <th>BOY</th>
                     <th>GIRL</th>
-                    <th>Grand Total</th>
+                    <th>Total</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -52,6 +52,12 @@ export const itCreateTeacher = async (payload) => {
   return data;
 };
 
+// IT Admin: List remaining OtherEvents (unassigned) for given target scope
+export const itListRemainingOtherEvents = async (params = {}) => {
+  const { data } = await API.get(`/api/it-admin/teachers/remaining-other-events`, { params });
+  return data;
+};
+
 // IT Admin: Read-only event listings for filters
 export const itListEvents = async () => {
   const { data } = await API.get(`/api/it-admin/events`);
@@ -98,4 +104,4 @@ export const itGetTeachersBySchoolReport = async (params = {}) => {
   return data;
 };
 
-export default { itListParticipants, itUpdateParticipant, itFinalizeParticipants, itCreateParticipant, itListTeachers, itUpdateTeacher, itFinalizeTeachers, itCreateTeacher, itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview, itGetParticipantsByDistrictReport, itGetTeachersByDistrictReport, itGetTeachersBySchoolReport };
+export default { itListParticipants, itUpdateParticipant, itFinalizeParticipants, itCreateParticipant, itListTeachers, itUpdateTeacher, itFinalizeTeachers, itCreateTeacher, itListRemainingOtherEvents, itListEvents, itListDistrictEvents, itGetOverviewMetrics, itGetNotReported, itGetStudentsYetToReport, itGetTeachersOverview, itGetParticipantsByDistrictReport, itGetTeachersByDistrictReport, itGetTeachersBySchoolReport };

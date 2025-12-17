@@ -7,7 +7,7 @@ export default function ITAdminDetailedList() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
    const memberLabels = {
@@ -165,7 +165,7 @@ export default function ITAdminDetailedList() {
       const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
 
       doc.setFontSize(14);
-      doc.text("Detailed Participants", 40, 32);
+      doc.text("Detailed Participants & Teachers List", 40, 32);
 
       const partHeaders = [
         "Sl.No",

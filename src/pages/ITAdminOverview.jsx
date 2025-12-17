@@ -9,7 +9,7 @@ export default function ITAdminOverview() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
   const [districtId, setDistrictId] = useState("");
@@ -548,7 +548,7 @@ export default function ITAdminOverview() {
                 <div className="card-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="dot blue" />
-                    <div style={{ color: '#475569', fontWeight: 600 }}>Students Reported From Schools</div>
+                    <div style={{ color: '#475569', fontWeight: 600 }}>Students from School</div>
                   </div>
                   
                   {/* <button className="btn ghost" onClick={() => {
@@ -582,7 +582,7 @@ export default function ITAdminOverview() {
                 <div className="card-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="dot green" />
-                    <div style={{ color: '#475569', fontWeight: 600 }}>Students Reported From Districts</div>
+                    <div style={{ color: '#475569', fontWeight: 600 }}>Students from Districts </div>
                   </div>
                   {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
@@ -656,7 +656,7 @@ export default function ITAdminOverview() {
                 <div className="card-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="dot green" />
-                    <div style={{ color: '#475569', fontWeight: 600 }}> Total Accompanist Reported</div>
+                    <div style={{ color: '#475569', fontWeight: 600 }}> Accompanist Reported</div>
                   </div>
                   {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
@@ -686,7 +686,7 @@ export default function ITAdminOverview() {
                 <div className="card-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="dot blue" />
-                    <div style={{ color: '#475569', fontWeight: 600 }}>Teachers Reported From Schools</div>
+                    <div style={{ color: '#475569', fontWeight: 600 }}>School Accompanist</div>
                   </div>
                   {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();
@@ -714,7 +714,7 @@ export default function ITAdminOverview() {
                 <div className="card-header">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="dot green" />
-                    <div style={{ color: '#475569', fontWeight: 600 }}>Gurus Reported From Districts</div>
+                    <div style={{ color: '#475569', fontWeight: 600 }}>District Accompanist </div>
                   </div>
                   {/* <button className="btn ghost" onClick={() => {
                     const sp = new URLSearchParams();

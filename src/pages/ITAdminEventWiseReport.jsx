@@ -6,7 +6,7 @@ export default function ITAdminEventWiseReport() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
   const spInit = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -82,15 +82,48 @@ export default function ITAdminEventWiseReport() {
       const { default: jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-      doc.setFontSize(14);
-      doc.text('Event-wise Report', 40, 32);
+
+      // Header: logo (if available) and centered title
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const leftMargin = 40;
+      const rightMargin = 40;
+      let cursorY = 24;
+
+      const loadImageDataUrl = async (url) => {
+        try {
+          const res = await fetch(url, { cache: 'no-cache' });
+          const blob = await res.blob();
+          return await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        } catch (_) { return null; }
+      };
+
+      const leftLogo = await loadImageDataUrl('/images/SSSSO.png');
+      const rightLogo = await loadImageDataUrl('/images/SSSBV-1-removebg-preview.png');
+      const logoW = 36, logoH = 36;
+      if (leftLogo) {
+        try { doc.addImage(leftLogo, 'PNG', leftMargin, cursorY, logoW, logoH); } catch (_) {}
+      }
+      if (rightLogo) {
+        try { doc.addImage(rightLogo, 'PNG', pageWidth - rightMargin - logoW, cursorY, logoW, logoH); } catch (_) {}
+      }
+
+      doc.setFontSize(16);
+      doc.text('Event-wise Report', pageWidth / 2, cursorY + 24, { align: 'center' });
+
+      cursorY += 36 + 12;
       const headSchool = [['Sl.No','Event','Audience','Nomination','Present']];
       const rank = (aud) => aud === 'Senior' ? 0 : (aud === 'Junior' ? 1 : 2);
       const schoolSorted = (schoolRows || []).slice().sort((a,b)=> (rank(a.audience)-rank(b.audience)) || a.title.localeCompare(b.title));
       const toBodySchool = (arr) => arr.map((r, i) => [String(i+1), r.title, r.audience || '-', String(r.nomination||0), String(r.present||0)]);
-      autoTable(doc, { head: headSchool, body: toBodySchool(schoolSorted), startY: 48, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } , didDrawPage: (data)=>{ doc.setFontSize(12); doc.text('School Events', 40, 44);} });
+      doc.setFontSize(12);
+      doc.text('School Events', leftMargin, cursorY);
+      autoTable(doc, { head: headSchool, body: toBodySchool(schoolSorted), startY: cursorY + 6, headStyles: { fillColor: [59,130,246] }, styles: { fontSize: 9 }, theme: 'striped', margin: { left: 40, right: 40 } });
       const afterY = doc.lastAutoTable.finalY + 18;
-      doc.setFontSize(12); doc.text('District Events', 40, afterY);
+      doc.setFontSize(12); doc.text('District Events', leftMargin, afterY);
       const headDistrict = [['Sl.No','Event','Nomination','Present']];
       const districtSorted = (districtRows || []).slice().sort((a,b)=> a.title.localeCompare(b.title));
       const toBodyDistrict = (arr) => arr.map((r, i) => [String(i+1), r.title, String(r.nomination||0), String(r.present||0)]);

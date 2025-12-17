@@ -6,7 +6,7 @@ export default function ITAdminDistrictTotalsReport() {
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
-    { key: "teachers", label: "Accompanying Teacher & Guru" },
+    { key: "teachers", label: "Accompanist" },
   ];
 
   const spInit = useMemo(() => new URLSearchParams(window.location.search), []);
@@ -19,6 +19,7 @@ export default function ITAdminDistrictTotalsReport() {
   const [rows, setRows] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
+
 
   const memberLabels = {
     dist_president: "Dist President",
@@ -292,7 +293,7 @@ export default function ITAdminDistrictTotalsReport() {
       doc.setFontSize(14);
       const title = all ? 'District-wise Total Participant Count (Nominations)' : 'District-wise Total Participant Count';
 
-      // Place two corner logos (left & right) and a centered logo + mantra/title
+      // Place two corner logos (left & right) and centered mantra/title
       const loadImageDataUrl = async (src) => {
         try {
           const resp = await fetch(src);
@@ -304,26 +305,23 @@ export default function ITAdminDistrictTotalsReport() {
           });
         } catch { return null; }
       };
-      const [leftLogoData, rightLogoData, centerLogoData] = await Promise.all([
-      
+      const [leftLogoData, rightLogoData] = await Promise.all([
         loadImageDataUrl('/images/SSSBV-1-removebg-preview.png'),
         loadImageDataUrl('/images/SSSSO.png'),
       ]);
       const pageWidth = doc.internal.pageSize.getWidth();
       const marginX = 40;
       const sideW = 60, sideH = 60; // corner logos
-      const centerW = 70, centerH = 70; // centered logo
       const yTop = 16;
       // draw corner logos
       if (leftLogoData) { try { doc.addImage(leftLogoData, 'PNG', marginX, yTop, sideW, sideH); } catch {} }
       if (rightLogoData) { try { doc.addImage(rightLogoData, 'PNG', pageWidth - marginX - sideW, yTop, sideW, sideH); } catch {} }
-      // draw centered logo
-      if (centerLogoData) { try { const xC = (pageWidth - centerW) / 2; doc.addImage(centerLogoData, 'PNG', xC, yTop, centerW, centerH); } catch {} }
       const midX = pageWidth / 2;
+      // Centered texts at the very top between logos
       doc.setFontSize(12);
-      doc.text('Aum Sri Sai Ram', midX, yTop + centerH + 14, { align: 'center' });
+      doc.text('Aum Sri Sai Ram', midX, yTop + 14, { align: 'center' });
       doc.setFontSize(14);
-      doc.text(title, midX, yTop + centerH + 34, { align: 'center' });
+      doc.text(title, midX, yTop + 32, { align: 'center' });
       const head = [[
         "Sl.No",
         "District",
@@ -411,7 +409,7 @@ export default function ITAdminDistrictTotalsReport() {
       autoTable(doc, {
         head: head,
         body: [...body, ...foot],
-        startY: yTop + centerH + 44,
+        startY: yTop + sideH + 35,
         headStyles: { fillColor: [71, 85, 105], halign: 'center' },
         styles: { fontSize: 9 },
         theme: 'grid',
@@ -427,6 +425,7 @@ export default function ITAdminDistrictTotalsReport() {
   return (
     <DashboardLayout title="School-wise Total Participant Count" sidebarItems={sidebarItems} activeKey="overview" onSelectItem={(key) => window.location.assign(`/it-admin/${key}`)}>
       <div style={{ display: 'grid', gap: 12 }}>
+   
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button className="btn" onClick={() => window.history.back()}>Back</button>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
