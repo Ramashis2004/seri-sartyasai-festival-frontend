@@ -42,13 +42,15 @@ export default function EventCoordinatorMarks() {
     return "";
   };
 
-  const buildConsolidated = async (ignoreSchoolFilter = false) => {
+  const buildConsolidated = async (ignoreSchoolFilter = false, onlyPresentOrFrozen = false) => {
     const evs = activeTab === "school" ? schoolEvents : districtEvents;
     const matrix = new Map();
     for (const ev of (evs || [])) {
       try {
         const arr = await ecApi.ecListParticipants({ scope: activeTab, eventId: ev._id });
         (Array.isArray(arr) ? arr : []).forEach((p) => {
+          // If requested, only include participants who are present OR frozen
+          if (onlyPresentOrFrozen && !(p.present === true || p.frozen === true)) return;
           if (!ignoreSchoolFilter && activeTab === "school" && selectedSchool && String(p.schoolName || "") !== String(selectedSchool)) return;
           const key = `${String(p.name||'').trim().toLowerCase()}|${String(p.schoolName||'').trim().toLowerCase()}|${String(p.districtName||'').trim().toLowerCase()}`;
           if (!matrix.has(key)) {
@@ -65,7 +67,7 @@ export default function EventCoordinatorMarks() {
   };
 
   const downloadCSVAll = async () => {
-    const { rows, maxEvents } = await buildConsolidated(true);
+    const { rows, maxEvents } = await buildConsolidated(true, true);
     const header = ["Name", "District", "School","Class","Group"]; 
     for (let i = 1; i <= maxEvents; i++) { header.push(`EVENT-${i}`, `POSITION of EVENT-${i}`); }
     const body = rows.map(r => {
@@ -91,7 +93,7 @@ export default function EventCoordinatorMarks() {
   };
 
   const downloadDOCXAll = async () => {
-    const { rows, maxEvents } = await buildConsolidated(true);
+    const { rows, maxEvents } = await buildConsolidated(true, true);
     try {
       const docx = await import("docx");
       const { saveAs } = await import("file-saver");

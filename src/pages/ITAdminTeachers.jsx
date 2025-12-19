@@ -407,11 +407,11 @@ export default function ITAdminTeachers() {
           <div style="display: flex; gap: 15px; margin: 8px 0;">
             <label style="display: flex; align-items: center; gap: 5px;">
               <input type="radio" name="swal-gender" value="boy" ${row.gender === "boy" ? "checked" : ""}>
-              Boy
+              Gents
             </label>
             <label style="display: flex; align-items: center; gap: 5px;">
               <input type="radio" name="swal-gender" value="girl" ${row.gender === "girl" ? "checked" : ""}>
-              Girl
+              Ledies
             </label>
           </div>
         </div>
@@ -679,7 +679,18 @@ export default function ITAdminTeachers() {
         return true;
       });
     }
-    return arr;
+    // Sort by District, then by School
+    const copy = Array.isArray(arr) ? [...arr] : [];
+    copy.sort((a, b) => {
+      const ad = String(a?.districtName || '');
+      const bd = String(b?.districtName || '');
+      const dCmp = ad.localeCompare(bd, undefined, { sensitivity: 'base' });
+      if (dCmp !== 0) return dCmp;
+      const as = String(a?.schoolName || '');
+      const bs = String(b?.schoolName || '');
+      return as.localeCompare(bs, undefined, { sensitivity: 'base' });
+    });
+    return copy;
   }, [items, role, eventId, gender]);
 
   const onToggleFreezeRow = async (row) => {

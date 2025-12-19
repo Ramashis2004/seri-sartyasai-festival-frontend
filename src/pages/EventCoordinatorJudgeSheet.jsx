@@ -143,7 +143,11 @@ export default function EventCoordinatorJudgeSheet() {
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
     }).join(","));
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+   const bom = "\uFEFF"; // UTF-8 BOM
+const blob = new Blob([bom + lines.join("\n")], {
+  type: "text/csv;charset=utf-8;",
+});
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

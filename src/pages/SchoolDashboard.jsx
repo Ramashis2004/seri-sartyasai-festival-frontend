@@ -362,6 +362,13 @@ export default function SchoolDashboard() {
   const [savingParticipants, setSavingParticipants] = useState(false);
   const [formKey, setFormKey] = useState(0);
 
+  // Cultural Programme (hidden backend event)
+  const CULTURAL_EVENT_ID = "694599d2de9c7cb446c0034b";
+  const [isCulturalEvent, setIsCulturalEvent] = useState(false);
+  const [culturalParticipants, setCulturalParticipants] = useState([
+    { name: "", gender: "", className: "" },
+  ]);
+
   const nameInputRef = useRef(null);
 
   // Events / Teachers
@@ -453,9 +460,35 @@ export default function SchoolDashboard() {
       const data = await listParticipants(eventId);
       const arr = Array.isArray(data) ? data : [];
       setParticipants(arr);
-      // Build server grid (arrays per eventId+group)
+
+      // Split cultural vs normal participants by hidden cultural eventId
+      const culturalFromServer = arr.filter(
+        (p) => String(p.eventId || p.event) === CULTURAL_EVENT_ID
+      );
+      const normalArr = arr.filter(
+        (p) => String(p.eventId || p.event) !== CULTURAL_EVENT_ID
+      );
+
+      // If there are any saved cultural participants, auto-enable the cultural event flag
+      if (culturalFromServer.length > 0) {
+        setIsCulturalEvent(true);
+        setCulturalParticipants(
+          culturalFromServer.map((p) => ({
+            _id: p._id,
+            name: p.name || "",
+            gender: (p.gender || "").toLowerCase(),
+            className: p.className || "",
+            group: (p.group || "junior").toLowerCase(),
+          }))
+        );
+      } else {
+        // keep at least one empty row
+        setCulturalParticipants([{ name: "", gender: "", className: "" }]);
+      }
+
+      // Build server grid (arrays per eventId+group) only for normal events
       const serverGrid = {};
-      arr.forEach((p) => {
+      normalArr.forEach((p) => {
         const evId = p.eventId || p.event;
         if (!evId) return;
         serverGrid[evId] = serverGrid[evId] || {};
@@ -618,8 +651,50 @@ export default function SchoolDashboard() {
       setParticipantsDirty(hasAny);
       return next;
     });
+    // Reset cultural event data
+    setIsCulturalEvent(false);
+    setCulturalParticipants([{ name: "", gender: "", className: "" }]);
     if (nameInputRef.current) nameInputRef.current.value = "";
     setFormKey((k) => k + 1);
+  };
+
+  const setCulturalGridValue = (index, field, value) => {
+    setCulturalParticipants((prev) => {
+      const copy = Array.isArray(prev) ? [...prev] : [];
+      const row = { ...(copy[index] || {}) };
+      row[field] = value;
+      copy[index] = row;
+      return copy;
+    });
+    setParticipantsDirty(true);
+  };
+
+  const addCulturalRow = () => {
+    setCulturalParticipants((prev) => {
+      const copy = Array.isArray(prev) ? [...prev] : [];
+      copy.push({ name: "", gender: "", className: "" });
+      return copy;
+    });
+    setParticipantsDirty(true);
+  };
+
+  const removeCulturalRow = async (index) => {
+    const toDelete = Array.isArray(culturalParticipants) ? culturalParticipants[index] : null;
+    // If this row has been saved previously, delete from server first
+    if (toDelete?._id) {
+      try {
+        await deleteParticipant(toDelete._id);
+      } catch (e) {
+        toast.error(e?.response?.data?.message || "Failed to remove participant");
+        return; // abort local removal if server delete failed
+      }
+    }
+
+    setCulturalParticipants((prev) => {
+      const copy = Array.isArray(prev) ? prev.filter((_, i) => i !== index) : [];
+      return copy.length ? copy : [{ name: "", gender: "", className: "" }];
+    });
+    setParticipantsDirty(true);
   };
 
   const setGridValue = (eventId, group, index, field, value) => {
@@ -677,6 +752,28 @@ export default function SchoolDashboard() {
         hasPartialRow = true; // reuse flag to block and show alert below
       }
     });
+    // Cultural programme rows (unlimited)
+    if (isCulturalEvent) {
+      (culturalParticipants || []).forEach((row) => {
+        const name = (row.name || "").trim();
+        const gender = (row.gender || "").trim();
+        const className = (row.className || "").trim();
+        const hasAny = !!(name || gender || className);
+        const isComplete = !!(name && gender && className);
+        if (!hasAny) return; // ignore completely empty rows
+        if (hasAny && !isComplete) {
+          hasPartialRow = true;
+          return;
+        }
+        const group = (row.group || "junior").toLowerCase();
+        // Use the real hidden Cultural Programme ObjectId
+        list.push({ eventId: "694599d2de9c7cb446c0034b", group, name, gender, className });
+      });
+      if (hasPartialRow) {
+        alert("For cultural programme: each filled row must be complete (Name, Gender, Class).");
+        return;
+      }
+    }
     if (hasPartialRow) {
       alert("For group events: each filled row must be complete (Name, Gender, Class) and at least 2 participants are required.");
       return;
@@ -727,6 +824,23 @@ export default function SchoolDashboard() {
         hasPartialRow = true;
       }
     });
+    // Cultural programme rows (unlimited)
+    if (isCulturalEvent) {
+      (culturalParticipants || []).forEach((row) => {
+        const name = (row.name || "").trim();
+        const gender = (row.gender || "").trim();
+        const className = (row.className || "").trim();
+        const hasAny = !!(name || gender || className);
+        const isComplete = !!(name && gender && className);
+        if (!hasAny) return; // ignore completely empty rows
+        if (hasAny && !isComplete) {
+          hasPartialRow = true;
+          return;
+        }
+        const group = (row.group || "junior").toLowerCase();
+        list.push({ eventId: "694599d2de9c7cb446c0034b", group, name, gender, className });
+      });
+    }
     if (hasPartialRow) {
       alert("For group events: each filled row must be complete (Name, Gender, Class) and at least 2 participants are required.");
       return;
@@ -1068,6 +1182,7 @@ export default function SchoolDashboard() {
 
   const renderParticipantForm = () => {
     const anyUnlocked = (events || []).some((ev) => !isEventLocked(ev));
+    const canEditParticipants = anyUnlocked || isCulturalEvent;
     return (
     <div key={formKey} style={{ marginTop: 8 }}>
       <Card title={"Registration Form for School"} strong>
@@ -1179,6 +1294,110 @@ export default function SchoolDashboard() {
           )}
         </TableShell>
 
+        {/* Cultural programme section directly below participants table */}
+        <div style={{ marginTop: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              justifyContent: "space-between",
+              alignItems: isMobile ? "flex-start" : "center",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <div style={{ fontWeight: 600, color: palette.text }}>
+              Cultural Programme (Optional)
+            </div>
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                color: palette.text,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={isCulturalEvent}
+                onChange={(e) => {
+                  setIsCulturalEvent(e.target.checked);
+                  setParticipantsDirty(true);
+                }}
+                style={{ cursor: "pointer" }}
+              />
+              <span>Enable Cultural Programme Participants</span>
+            </label>
+          </div>
+          <div style={{ fontSize: 12, color: palette.textMuted, marginBottom: 8 }}>
+           SaiRam, Cultural Programme Participants includes :- Symposium participants 🎤 ,  Vedam Chanters 🕉️, Bhajan Singers 🎶 , Welcome & closing song performers 🎵, Drama Participants 🎭, Group Dancers 💃 etc.
+
+
+If you're in other events too, add your name to both lists 📝  No duplicates, just double the fun! 😄
+          </div>
+
+          {isCulturalEvent && (
+            <>
+              <TableShell
+                columns={[
+                  { label: "Cultural Programme" },
+                  { label: "Name of the Participant" },
+                  { label: "Boy/Girl" },
+                  { label: "Class" },
+                  { label: "" },
+                ]}
+              >
+                {(culturalParticipants || []).map((row, idx) => (
+                  <tr key={idx}>
+                    <td style={S.td}>Cultural Programme</td>
+                    <td style={S.td}>
+                      <Input
+                        type="text"
+                        placeholder="Enter full name"
+                        defaultValue={row.name || ""}
+                        onBlur={(e) => setCulturalGridValue(idx, "name", e.target.value)}
+                      />
+                    </td>
+                    <td style={S.td}>
+                      <select
+                        value={row.gender || ""}
+                        onChange={(e) => setCulturalGridValue(idx, "gender", e.target.value)}
+                        style={{ width: "100%", padding: "8px" }}
+                      >
+                        <option value="">Select gender</option>
+                        <option value="boy">Boy</option>
+                        <option value="girl">Girl</option>
+                      </select>
+                    </td>
+                    <td style={S.td}>
+                      <select
+                        value={row.className || ""}
+                        onChange={(e) => setCulturalGridValue(idx, "className", e.target.value)}
+                        style={{ width: "100%", padding: "8px" }}
+                      >
+                        <option value="">Select Class</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                      </select>
+                    </td>
+                    <td style={{ ...S.td, width: 120 }}>
+                      <Button danger onClick={() => removeCulturalRow(idx)}>
+                        Remove
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </TableShell>
+              <div style={{ display: "flex", justifyContent: "flex-start", marginTop: 8 }}>
+                <Button onClick={addCulturalRow}>+ Add Participant</Button>
+              </div>
+            </>
+          )}
+        </div>
+
         <div style={{ 
           display: "flex", 
           flexDirection: isMobile ? 'column' : 'row',
@@ -1189,7 +1408,7 @@ export default function SchoolDashboard() {
           <Button 
             onClick={resetParticipantForm}
             style={isMobile ? { width: '100%', textAlign: 'center' } : {}}
-            disabled={!anyUnlocked}
+            disabled={!canEditParticipants}
           >
             Reset
           </Button>
@@ -1197,7 +1416,7 @@ export default function SchoolDashboard() {
             variant="primary" 
             onClick={handleSubmitParticipant}
             style={isMobile ? { width: '100%', textAlign: 'center' } : {}}
-            disabled={!anyUnlocked}
+            disabled={!canEditParticipants}
           >
             Preview & Submit
           </Button>
@@ -1356,14 +1575,23 @@ export default function SchoolDashboard() {
           { label: "Class" },
         ]}
       >
-        {filteredParticipants.length === 0 ? (
-          <tr>
-            <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={6}>
-              No participants added yet.
-            </td>
-          </tr>
-        ) : (
-          filteredParticipants.map((p, idx) => {
+        {(() => {
+          const visible = (filteredParticipants || []).filter((p) => {
+            // Cultural participants (by hidden eventId) should be visible only when checkbox is on
+            const isCultural = String(p.eventId || p.event) === "694599d2de9c7cb446c0034b";
+            if (isCultural && !isCulturalEvent) return false;
+            return true;
+          });
+          if (visible.length === 0) {
+            return (
+              <tr>
+                <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={6}>
+                  No participants added yet.
+                </td>
+              </tr>
+            );
+          }
+          return visible.map((p, idx) => {
             const isJunior = (p.group || "").toLowerCase() === "junior";
             const chipStyle = isJunior
               ? { background: palette.chipJuniorBg, border: `1px solid ${palette.chipJuniorBorder}`, color: palette.chipJuniorText }
@@ -1374,7 +1602,11 @@ export default function SchoolDashboard() {
                 <td style={S.td}>{p.name}</td>
                 <td style={S.td}>
                   {(() => {
-                    const ev = events.find((e) => e._id === (p.eventId || p.event));
+                    const isCultural = String(p.eventId || p.event) === "694599d2de9c7cb446c0034b";
+                    if (isCultural && isCulturalEvent) {
+                      return "Cultural Event";
+                    }
+                    const ev = events.find((e) => String(e._id) === String(p.eventId || p.event));
                     const label = ev?.title || p.event || "-";
                     const locked = ev ? isEventLocked(ev) : false;
                     return (
@@ -1405,11 +1637,18 @@ export default function SchoolDashboard() {
               </tr>
             );
           })
-        )}
+        })()}
       </TableShell>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-        <Button variant="primary" onClick={handleSubmitAllParticipants} disabled={!participantsDirty || !(events || []).some((ev) => !isEventLocked(ev))}>
+        <Button
+          variant="primary"
+          onClick={handleSubmitAllParticipants}
+          disabled={
+            !participantsDirty ||
+            (!(events || []).some((ev) => !isEventLocked(ev)) && !isCulturalEvent)
+          }
+        >
           Submit
         </Button>
       </div>
@@ -1634,22 +1873,36 @@ export default function SchoolDashboard() {
               <div>{user?.mobile || user?.phone || "-"}</div>
             </div>
             <TableShell columns={[{ label: "Sl No" }, { label: "Event(s)" }, { label: "Group" }, { label: "Name of the Participant" }, { label: "Boy/Girl" }, { label: "Class" }]}>
-              {participants.length === 0 ? (
-                <tr>
-                  <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={6}>No participants</td>
-                </tr>
-              ) : (
-                participants.map((p, idx) => (
-                  <tr key={idx}>
-                    <td style={S.td}>{idx + 1}</td>
-                    <td style={S.td}>{events.find((ev) => ev._id === (p.eventId || p.event))?.title || "-"}</td>
-                    <td style={S.td}>{(p.group || "").charAt(0).toUpperCase() + (p.group || "").slice(1)}</td>
-                    <td style={S.td}>{p.name}</td>
-                    <td style={S.td}>{p.gender === "boy" ? "Boy" : p.gender === "girl" ? "Girl" : "-"}</td>
-                    <td style={S.td}>{p.className}</td>
-                  </tr>
-                ))
-              )}
+              {(() => {
+                const visible = (participants || []).filter((p) => {
+                  const isCultural = String(p.eventId || p.event) === "694599d2de9c7cb446c0034b";
+                  if (isCultural && !isCulturalEvent) return false;
+                  return true;
+                });
+                if (visible.length === 0) {
+                  return (
+                    <tr>
+                      <td style={{ ...S.td, textAlign: "center", color: palette.textMuted }} colSpan={6}>No participants</td>
+                    </tr>
+                  );
+                }
+                return visible.map((p, idx) => {
+                  const isCultural = String(p.eventId || p.event) === "694599d2de9c7cb446c0034b";
+                  const eventLabel = isCultural && isCulturalEvent
+                    ? "Cultural Event"
+                    : (events.find((ev) => String(ev._id) === String(p.eventId || p.event))?.title || p.event || "-");
+                  return (
+                    <tr key={idx}>
+                      <td style={S.td}>{idx + 1}</td>
+                      <td style={S.td}>{eventLabel}</td>
+                      <td style={S.td}>{(p.group || "").charAt(0).toUpperCase() + (p.group || "").slice(1)}</td>
+                      <td style={S.td}>{p.name}</td>
+                      <td style={S.td}>{p.gender === "boy" ? "Boy" : p.gender === "girl" ? "Girl" : "-"}</td>
+                      <td style={S.td}>{p.className}</td>
+                    </tr>
+                  );
+                });
+              })()}
             </TableShell>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, gap: 10 }}>
               <Button onClick={() => setShowParticipantPreview(false)}>Back</Button>

@@ -6,6 +6,12 @@ import Swal from "sweetalert2";
  
 
 export default function ITAdminParticipants() {
+  const CULTURAL_EVENT_ID = "694599d2de9c7cb446c0034b";
+  const isCulturalEvent = (e) => {
+    const title = String(e?.title || e?.name || "").toLowerCase();
+    const category = String(e?.category || e?.type || e?.group || e?.audience || "").toLowerCase();
+    return title.includes("cultur") || category.includes("cultur");
+  };
   const sidebarItems = [
     { key: "overview", label: "Dashboard" },
     { key: "participants", label: "Participants" },
@@ -361,7 +367,19 @@ export default function ITAdminParticipants() {
     setQ("");
   };
 
-  const filtered = useMemo(() => items, [items]);
+  const filtered = useMemo(() => {
+    const arr = Array.isArray(items) ? [...items] : [];
+    arr.sort((a, b) => {
+      const ad = String(a?.districtName || "");
+      const bd = String(b?.districtName || "");
+      const dCmp = ad.localeCompare(bd, undefined, { sensitivity: "base" });
+      if (dCmp !== 0) return dCmp;
+      const as = String(a?.schoolName || "");
+      const bs = String(b?.schoolName || "");
+      return as.localeCompare(bs, undefined, { sensitivity: "base" });
+    });
+    return arr;
+  }, [items]);
 
   const toCSV = () => {
     const header = [
@@ -572,25 +590,32 @@ export default function ITAdminParticipants() {
           const filledEventIds = new Set(existing.map((p) => String(p.eventId || p.event || p._id)));
           const available = all.filter((e) => {
             const id = String(e._id);
+
+            // Always show hidden Cultural Programme for schools, regardless of existing participants
+            if (isCulturalEvent(e)) return true;
+
             // If no participant yet, event is available
             if (!filledEventIds.has(id)) return true;
+
             // For group events, allow selection until participantCount is reached
             const isGroup = !!e.isGroupEvent && typeof e.participantCount === 'number' && e.participantCount >= 2;
             if (isGroup) {
               const used = countsByEvent[id] || 0;
               return used < e.participantCount;
             }
+
             // Non-group events remain one-participant only
             return false;
           });
           setModalEvents(available);
         } else if (addType === "district") {
           if (!addDistrictId) { setComputingEvents(false); return; }
-          const all = Array.isArray(await itListDistrictEvents()) ? await itListDistrictEvents() : [];
-          const existing = Array.isArray(await itListParticipants({ scope: 'district', districtId: addDistrictId })) ? await itListParticipants({ scope: 'district', districtId: addDistrictId }) : [];
-          const filledEventIds = new Set(existing.map((p) => String(p.eventId || p.event || p._id)));
-          const available = all.filter((e) => !filledEventIds.has(String(e._id)));
-          setModalEvents(available);
+
+          // For district participants, always show a single Cultural Programme option
+          // using the same hidden Cultural Programme ID as DistrictDashboard.
+          setModalEvents([
+            { _id: CULTURAL_EVENT_ID, title: "Cultural Programme" },
+          ]);
         }
       } catch { setModalEvents([]); }
       finally { setComputingEvents(false); }
@@ -880,7 +905,7 @@ export default function ITAdminParticipants() {
                       {addType === 'school' && (
                         <div style={{ display: 'grid', gap: 6 }}>
                           <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Junior or Senior</label>
-                          <select value={addGroup} disabled style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', background: '#f1f5f9', fontSize: 14 }}>
+                          <select value={addGroup} onChange={(e) => setAddGroup(e.target.value)} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', background: 'white', fontSize: 14 }}>
                             <option value="">Select audience</option>
                             <option value="junior">Junior</option>
                             <option value="senior">Senior</option>
