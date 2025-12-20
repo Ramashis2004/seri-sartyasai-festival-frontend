@@ -656,6 +656,15 @@ export default function ITAdminParticipants() {
     if (detected && detected !== addGroup) setAddGroup(detected);
   }, [showAdd, addType, addEventId, modalEvents]);
 
+  // Whether the currently selected modal event is Cultural Programme
+  const isCulturalSelected = useMemo(() => {
+    if (!addEventId) return false;
+    const ev = (modalEvents || []).find((e) => String(e._id) === String(addEventId));
+    if (!ev) return false;
+    const idMatch = String(ev._id) === String(CULTURAL_EVENT_ID);
+    return idMatch || isCulturalEvent(ev);
+  }, [addEventId, modalEvents]);
+
   const submitAdd = async (e) => {
     e?.preventDefault?.();
     if (!addType) { alert('Please select Participant Type'); return; }
@@ -920,7 +929,13 @@ export default function ITAdminParticipants() {
                       {addType === 'school' && (
                         <div style={{ display: 'grid', gap: 6 }}>
                           <label style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>Junior or Senior</label>
-                          <select value={addGroup} onChange={(e) => setAddGroup(e.target.value)} style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', background: 'white', fontSize: 14 }}>
+                          <select
+                            value={addGroup}
+                            onChange={(e) => setAddGroup(e.target.value)}
+                            disabled={!isCulturalSelected}
+                            style={{ padding: '12px 14px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none', background: !isCulturalSelected ? '#f1f5f9' : 'white', fontSize: 14 }}
+                            title={!isCulturalSelected ? 'Audience is fixed by the event and cannot be changed' : ''}
+                          >
                             <option value="">Select audience</option>
                             <option value="junior">Junior</option>
                             <option value="senior">Senior</option>
