@@ -611,11 +611,26 @@ export default function ITAdminParticipants() {
         } else if (addType === "district") {
           if (!addDistrictId) { setComputingEvents(false); return; }
 
-          // For district participants, always show a single Cultural Programme option
-          // using the same hidden Cultural Programme ID as DistrictDashboard.
-          setModalEvents([
-            { _id: CULTURAL_EVENT_ID, title: "Cultural Programme" },
-          ]);
+          // For district participants, show all district events that are not yet filled
+          // for the selected district, plus the hidden Cultural Programme option.
+          const allDistrictEvents = Array.isArray(await itListDistrictEvents()) ? await itListDistrictEvents() : [];
+          const existing = Array.isArray(await itListParticipants({ scope: 'district', districtId: addDistrictId })) ? await itListParticipants({ scope: 'district', districtId: addDistrictId }) : [];
+          const filledEventIds = new Set(existing.map((p) => String(p.eventId || p.event || p._id || "")));
+
+          const available = allDistrictEvents.filter((e) => {
+            const id = String(e._id);
+            // Always allow Cultural Programme
+            if (id === String(CULTURAL_EVENT_ID)) return true;
+            // Show district event if not already filled for this district
+            return !filledEventIds.has(id);
+          });
+
+          // Ensure Cultural Programme option is present even if it's not part of the districtEvents list
+          if (!available.find((e) => String(e._id) === String(CULTURAL_EVENT_ID))) {
+            available.unshift({ _id: CULTURAL_EVENT_ID, title: "Cultural Programme" });
+          }
+
+          setModalEvents(available);
         }
       } catch { setModalEvents([]); }
       finally { setComputingEvents(false); }
