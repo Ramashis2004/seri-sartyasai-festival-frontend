@@ -35,10 +35,42 @@ export default function ITAdminDetailedList() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const groupedParticipants = useMemo(() => {
+    const map = new Map();
+    for (const p of participants) {
+      const districtName = p?.districtName || "";
+      const schoolName = p?.schoolName || "";
+      const name = p?.name || "";
+      const className = p?.className || "";
+      const gender = p?.gender || "";
+      const source = p?.source || "";
+      const group = source === "school" ? (p?.group || "") : "";
+      const key = [districtName, schoolName, name, className, gender, source, group].join("|");
+
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          ...p,
+          _eventTitles: p?.eventTitle ? [p.eventTitle] : [],
+        });
+        continue;
+      }
+
+      if (p?.eventTitle && !existing._eventTitles.includes(p.eventTitle)) {
+        existing._eventTitles.push(p.eventTitle);
+      }
+    }
+
+    return Array.from(map.values()).map((p) => ({
+      ...p,
+      eventTitle: (p._eventTitles || []).join(", "),
+    }));
+  }, [participants]);
+
   const summary = useMemo(() => {
-    const totalParticipants = participants.length;
-    const boys = participants.filter((p) => (p.gender || "").toLowerCase() === "boy").length;
-    const girls = participants.filter((p) => (p.gender || "").toLowerCase() === "girl").length;
+    const totalParticipants = groupedParticipants.length;
+    const boys = groupedParticipants.filter((p) => (p.gender || "").toLowerCase() === "boy").length;
+    const girls = groupedParticipants.filter((p) => (p.gender || "").toLowerCase() === "girl").length;
 
     const totalTeachers = teachers.length;
     const maleTeachers = teachers.filter((t) => (t.gender || "").toLowerCase().startsWith("m") || (t.gender || "").toLowerCase() === "boy").length;
@@ -51,7 +83,7 @@ export default function ITAdminDetailedList() {
     }, {});
 
     return { totalParticipants, boys, girls, totalTeachers, maleTeachers, femaleTeachers, byRole };
-  }, [participants, teachers]);
+  }, [groupedParticipants, teachers]);
 
   const load = async () => {
     try {
@@ -100,7 +132,7 @@ export default function ITAdminDetailedList() {
       "Present",
       "Frozen",
     ];
-    const body = participants.map((r, i) => [
+    const body = groupedParticipants.map((r, i) => [
       String(i + 1),
        r.districtName || "",
        r.schoolName || "", 
@@ -179,7 +211,7 @@ export default function ITAdminDetailedList() {
         
        
       ];
-      const partBody = participants.map((r, i) => [
+      const partBody = groupedParticipants.map((r, i) => [
         String(i + 1),
         r.districtName || "",
         r.schoolName || "",
@@ -323,8 +355,8 @@ export default function ITAdminDetailedList() {
                     </tr>
                   </thead>
                   <tbody>
-                    {participants.length ? (
-                      participants.map((r, i) => (
+                    {groupedParticipants.length ? (
+                      groupedParticipants.map((r, i) => (
                         <tr key={r._id || i}>
                           <td>{i + 1}</td>
                           <td>{r.districtName || "-"}</td>
