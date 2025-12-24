@@ -36,6 +36,7 @@ export default function ITAdminDetailedList() {
   const [error, setError] = useState("");
 
   const groupedParticipants = useMemo(() => {
+    const norm = (v) => String(v ?? "").trim().toLowerCase();
     const map = new Map();
     for (const p of participants) {
       const districtName = p?.districtName || "";
@@ -45,25 +46,39 @@ export default function ITAdminDetailedList() {
       const gender = p?.gender || "";
       const source = p?.source || "";
       const group = source === "school" ? (p?.group || "") : "";
-      const key = [districtName, schoolName, name, className, gender, source, group].join("|");
+      const key = [
+        norm(districtName),
+        norm(schoolName),
+        norm(name),
+        norm(className),
+        norm(gender),
+        norm(source),
+        norm(group),
+      ].join("|");
 
       const existing = map.get(key);
       if (!existing) {
         map.set(key, {
           ...p,
-          _eventTitles: p?.eventTitle ? [p.eventTitle] : [],
+          _eventTitles: p?.eventTitle ? [String(p.eventTitle).trim()] : [],
+          _eventTitleKeys: p?.eventTitle ? new Set([norm(p.eventTitle)]) : new Set(),
         });
         continue;
       }
 
-      if (p?.eventTitle && !existing._eventTitles.includes(p.eventTitle)) {
-        existing._eventTitles.push(p.eventTitle);
+      if (p?.eventTitle) {
+        const t = String(p.eventTitle).trim();
+        const k = norm(t);
+        if (!existing._eventTitleKeys.has(k)) {
+          existing._eventTitleKeys.add(k);
+          existing._eventTitles.push(t);
+        }
       }
     }
 
     return Array.from(map.values()).map((p) => ({
       ...p,
-      eventTitle: (p._eventTitles || []).join(", "),
+      eventTitle: (p._eventTitles || []).slice().sort((a, b) => a.localeCompare(b)).join(", "),
     }));
   }, [participants]);
 
