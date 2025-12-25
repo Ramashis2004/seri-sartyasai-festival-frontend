@@ -132,10 +132,10 @@ export default function EventCoordinatorMarks() {
     const v = Number(n);
     if (!Number.isFinite(v)) return "";
     if (v === 0) return "Absent";
-    if (v >= 1 && v <= 15) return "Participant";
-    if (v >= 16 && v <= 20) return "Good";
-    if (v >= 21 && v <= 25) return "Very Good";
-    if (v >= 26 && v <= 30) return "Excellent";
+    if (v >= 1 && v <= 14) return "Participant";
+    if (v >= 15 && v <= 18) return "Good";
+    if (v >= 19 && v <= 23) return "Very Good";
+    if (v >= 24 && v <= 30) return "Excellent";
     return "";
   };
 
