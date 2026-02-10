@@ -117,8 +117,10 @@ export default function ITAdminOverview() {
           const dId = String(p.districtId || '');
           const sName = p.schoolName || '-';
           const name = norm(p.studentName || p.name);
+          const gKey = norm(p.gender);
+          const cKey = norm(p.className);
           if (!dId || !name) return;
-          const uKey = `${dId}__${sName}__${name}`;
+          const uKey = `${dId}__${sName}__${name}__${gKey}__${cKey}`;
           if (seen.has(uKey)) return;
           seen.add(uKey);
           const g = norm(p.gender);
@@ -136,8 +138,10 @@ export default function ITAdminOverview() {
           const dId = String(p.districtId || '');
           const sName = p.schoolName || '-';
           const name = norm(p.studentName || p.name);
+          const gKey = norm(p.gender);
+          const cKey = norm(p.className);
           if (!dId || !name) return;
-          const uKey = `${dId}__${sName}__${name}`;
+          const uKey = `${dId}__${sName}__${name}__${gKey}__${cKey}`;
           if (excludeSeen && excludeSeen.has(uKey)) return; // skip if already counted in schools
           if (seen.has(uKey)) return;
           seen.add(uKey);
@@ -163,8 +167,10 @@ export default function ITAdminOverview() {
           const dId = String(p.districtId || '');
           const sName = p.schoolName || '-';
           const name = norm(p.studentName || p.name);
+          const gKey = norm(p.gender);
+          const cKey = norm(p.className);
           if (!dId || !name) return;
-          const uKey = `${dId}__${sName}__${name}`;
+          const uKey = `${dId}__${sName}__${name}__${gKey}__${cKey}`;
           if (seen.has(uKey)) return;
           seen.add(uKey);
           const g = norm(p.gender);
